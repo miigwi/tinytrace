@@ -1,0 +1,13 @@
+# PlatformIO build output
+firmware/.pio/
+
+# Device secrets, if ever used (config lives in NVS, not files)
+firmware/include/secrets.h
+
+# macOS
+.DS_Store
+
+# Python (enclosure generator)
+**/__pycache__/
+*.pyc
+enclosure/.deps/
