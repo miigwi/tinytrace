@@ -23,7 +23,15 @@ void configSave(const Config &c);
 // configClear erases the stored config (forces re-provisioning).
 void configClear();
 
-// runPortal brings up a SoftAP ("dynaglance-setup") + captive-portal web form,
-// then blocks serving it. On submit it saves to NVS and reboots. It does not
-// touch the display — the caller shows the join instructions first.
-void runPortal();
+// Which fields the captive portal edits. WIFI and DT scopes edit only their
+// half and preserve the rest of the stored config, so the launcher can offer
+// dedicated "change WiFi" / "change Dynatrace" entries without re-entering
+// everything. ALL is first-time provisioning (every field).
+enum PortalScope : uint8_t { PORTAL_ALL = 0, PORTAL_WIFI = 1, PORTAL_DT = 2 };
+
+// runPortal brings up a SoftAP ("dynaglance-setup") + captive-portal web form
+// for the given scope, then blocks serving it. Non-secret fields are prefilled
+// from NVS; a blank password/token field keeps the stored value. On submit it
+// merges into NVS and reboots. It does not touch the display — the caller shows
+// the join instructions first.
+void runPortal(PortalScope scope = PORTAL_ALL);
