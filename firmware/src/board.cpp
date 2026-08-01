@@ -92,6 +92,11 @@ Action inputPoll() {
 
 bool provisioningHeld() { return pressed(BTN_D1); }
 
+bool btnDown(uint8_t d) {
+  int pin = d == 0 ? BTN_D0 : d == 1 ? BTN_D1 : BTN_D2;
+  return pressed(pin);
+}
+
 // -------------------------------------------------------------------------- beacon
 
 void beaconBegin() {
@@ -117,5 +122,10 @@ void beacon(Sev sev, bool stale) {
     c = pixel.Color(0, 120, 30);  // green — all clear
   }
   pixel.setPixelColor(0, c);
+  pixel.show();
+}
+
+void beaconColor(uint8_t r, uint8_t g, uint8_t b) {
+  pixel.setPixelColor(0, pixel.Color(r, g, b));
   pixel.show();
 }

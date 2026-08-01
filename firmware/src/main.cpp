@@ -1,175 +1,144 @@
-// Tinytrace — firmware for the Adafruit ESP32-S3 Reverse TFT Feather.
+// Boot launcher for the Feather.
 //
-// STANDALONE: talks directly to a Dynatrace Grail tenant over HTTPS with a
-// read-only platform token (provisioned via captive portal into NVS).
-// Everything hardware-specific lives behind hal.h (board.cpp).
+// One firmware image, two apps. On every reset this menu comes up; the three
+// front buttons pick which app owns the device until the next reset:
+//   D0 → move up   ·   D2 → move down   ·   D1 → select
 //
-// Display: Adafruit_ST7789 (+ Adafruit_GFX) — TFT_eSPI's init crash-loops here.
+//   0  TINYTRACE      the Dynatrace desk panel (WiFi + Grail tenant)
+//   1  TRACE RUNNER   a one-button noir endless runner (offline)
+//   2  WIFI SETUP     re-enter just the WiFi network + password
+//   3  DYNATRACE      re-enter just the tenant URL + platform token
 //
-// Input (three front buttons, see board.cpp):
-//   D0  → previous screen
-//   D1  → refresh (re-query now)   ·   D1 long-press → idle / mascot
-//   D2  → next screen
+// The two setup entries open the captive portal scoped to their half only,
+// preserving the other fields. Hold D0 while selecting TINYTRACE to force the
+// full (all-fields) portal.
 //
-// Screens (built from DQL every 60 s into RAM; buttons switch instantly):
-//   0 active problems   1 golden signals   2 last logs   3 idle
+// The two apps are separate compiled modules (tinytrace_app.cpp,
+// game_tracerunner.cpp); a runtime chooser needs both linked into one binary,
+// which is why this is a launcher and not two PlatformIO envs.
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7789.h>
 #include <Arduino.h>
-#include <WiFi.h>
 
+#include "app.h"
 #include "config.h"
-#include "dt_screens.h"
 #include "hal.h"
-#include "model.h"
-#include "net.h"
 #include "render.h"
 
-// TLS handshakes need more stack than the 8 KB default loop task.
+// TLS handshakes (tinytrace) need more stack than the 8 KB default loop task.
 SET_LOOP_TASK_STACK_SIZE(16 * 1024);
 
 // TFT_CS/TFT_DC/TFT_RST come from the board variant. Hardware SPI (SCK 36 / MOSI 35).
 static Adafruit_ST7789 tft(TFT_CS, TFT_DC, TFT_RST);
 
-static Config gCfg;
-static Screen screens[DG_MAX_SCREENS];
-static int screenCount = 0;
-static int current = 0;
+static const char *ITEMS[] = {"TINYTRACE", "TRACE RUNNER", "WIFI SETUP", "DYNATRACE SETUP"};
+static const char *BLURB[] = {"dynatrace desk panel", "one-button endless runner",
+                              "change wifi network", "change tenant + token"};
+static const int NITEMS = 4;
 
-static uint32_t lastInput = 0;
-static uint32_t lastRefresh = 0;
-static bool asleep = false;
+// Draw the menu with the given item highlighted. Kept deliberately plain — GFX
+// text, no dependency on the tinytrace renderer's private helpers.
+static void drawMenu(int sel) {
+  const int w = tft.width(), h = tft.height();
+  tft.fillScreen(0x0000);
+  tft.setTextWrap(false);
 
-static const uint32_t REFRESH_MS = 60000;  // tenant query cadence
+  // title
+  tft.setTextSize(2);
+  tft.setTextColor(0x5D9F);  // blue
+  const char *title = "TINYTRACER";
+  tft.setCursor(w / 2 - (int)strlen(title) * 6, 6);
+  tft.print(title);
+  tft.setTextSize(1);
+  tft.setTextColor(0x8410);
+  const char *sub = "select an app";
+  tft.setCursor(w / 2 - (int)strlen(sub) * 3, 24);
+  tft.print(sub);
 
-// The beacon tracks the worst severity on the CURRENT screen, so it changes as
-// you page — green/amber/red, blue when stale.
-static void updateBeacon() { beacon(screens[current].sev, screens[current].stale); }
-
-static void show() {
-  renderScreen(tft, screens[current], current, screenCount);
-  updateBeacon();
-}
-
-static void gotoScreen(int index) {
-  if (screenCount == 0) return;
-  current = (index + screenCount) % screenCount;
-  show();
-}
-
-static void gotoIdle() {
-  for (int i = 0; i < screenCount; i++) {
-    if (screens[i].id == "idle") {
-      gotoScreen(i);
-      return;
+  const int top = 40, rowH = 19;
+  for (int i = 0; i < NITEMS; i++) {
+    int y = top + i * rowH;
+    bool on = i == sel;
+    if (on) {
+      tft.fillRect(6, y - 2, w - 12, rowH - 2, 0x18E3);  // dim panel
+      tft.drawRect(6, y - 2, w - 12, rowH - 2, 0x2E8B);  // teal edge
     }
+    tft.setTextSize(2);
+    tft.setTextColor(on ? 0xFFFF : 0x8410);
+    tft.setCursor(12, y);
+    tft.print(on ? ">" : " ");
+    tft.setCursor(28, y);
+    tft.print(ITEMS[i]);
   }
+
+  // description of the highlighted item, then the control hint
+  tft.setTextSize(1);
+  tft.setTextColor(0x2E8B);
+  tft.setCursor(w / 2 - (int)strlen(BLURB[sel]) * 3, top + NITEMS * rowH + 2);
+  tft.print(BLURB[sel]);
+  tft.setTextColor(0x8410);
+  const char *hint = "D0 up  D2 down  D1 select";
+  tft.setCursor(w / 2 - (int)strlen(hint) * 3, h - 10);
+  tft.print(hint);
 }
 
-static void markStale(Screen &s) {
-  if (s.valid) {
-    s.stale = true;
-    s.err = "tenant unreachable";
+// Block on the menu until D1 selects an item; returns the chosen index.
+static int launcherMenu() {
+  int sel = 0;
+  drawMenu(sel);
+  for (;;) {
+    Action a = inputPoll();
+    if (a == ACT_PREV) {  // D0
+      sel = (sel - 1 + NITEMS) % NITEMS;
+      drawMenu(sel);
+    } else if (a == ACT_NEXT) {  // D2
+      sel = (sel + 1) % NITEMS;
+      drawMenu(sel);
+    } else if (a == ACT_REFRESH || a == ACT_IDLE) {  // D1 (tap or long-press)
+      return sel;
+    }
+    delay(15);
   }
-}
-
-// refreshAll re-queries every screen into RAM and sets the beacon to the worst
-// severity seen (blue if anything is stale). A failed query keeps the last good
-// screen and dims it. This blocks for the few seconds of TLS/DQL — the buttons
-// resume responding between refreshes, which is why the cadence is 60 s and the
-// panel is glanceable rather than interactive.
-static void refreshAll() {
-  if (WiFi.status() != WL_CONNECTED) WiFi.reconnect();
-
-  Screen p, g, l;
-  if (buildProblems(gCfg, p)) screens[0] = p; else markStale(screens[0]);
-  if (buildGolden(gCfg, g)) screens[1] = g; else markStale(screens[1]);
-  if (buildLogs(gCfg, l)) screens[2] = l; else markStale(screens[2]);
-  int probs = screens[0].valid ? screens[0].count : 0;
-  screens[3] = buildIdle(probs, gCfg.tenant);
-  screenCount = 4;
-
-  updateBeacon();  // reflect the current screen after the rebuild
-  lastRefresh = millis();
 }
 
 void setup() {
   Serial.begin(115200);
   delay(300);
-  Serial.println("\n[dg] boot");
+  Serial.println("\n[launcher] boot");
 
   displayPowerOn();  // TFT/backlight power rail — must precede tft.init()
   beaconBegin();
   inputBegin();
-  renderInit(tft);
+  renderInit(tft);  // init(135,240) + rotation + clear
 
-  // Provisioning: NVS config, or the captive portal. Hold D1 at boot to force it.
-  Config cfg;
-  bool have = configLoad(cfg);
-  if (!have || provisioningHeld()) {
-    Serial.println(have ? "[dg] reconfigure requested" : "[dg] no config - setup portal");
-    beacon(SEV_OK, true);  // blue = setup mode
-    renderStatus(tft, "SETUP MODE", "join wifi 'dynaglance-setup'");
-    runPortal();  // blocks; saves to NVS and reboots
+  int choice = launcherMenu();
+  bool forcePortal = btnDown(0);  // hold D0 while selecting → full tinytrace setup
+
+  // Wait for every button to be released so the selecting press doesn't leak
+  // into the app (e.g. tinytrace reading D1 as a fresh provisioning hold, or the
+  // game treating it as an immediate jump).
+  while (btnDown(0) || btnDown(1) || btnDown(2)) delay(10);
+
+  switch (choice) {
+    case 1:
+      tracerunnerRun(tft);
+      break;
+    case 2:  // WiFi-only captive portal
+      beacon(SEV_OK, true);  // blue = setup mode
+      renderStatus(tft, "WIFI SETUP", "join wifi 'dynaglance-setup'");
+      runPortal(PORTAL_WIFI);  // saves + reboots
+      break;
+    case 3:  // Dynatrace-only captive portal
+      beacon(SEV_OK, true);
+      renderStatus(tft, "DYNATRACE", "join wifi 'dynaglance-setup'");
+      runPortal(PORTAL_DT);  // saves + reboots
+      break;
+    default:
+      tinytraceRun(tft, forcePortal);
+      break;
   }
-
-  renderStatus(tft, "connecting", cfg.ssid.c_str());
-  if (!wifiConnect(cfg)) {
-    Serial.println("[dg] wifi failed");
-    beacon(SEV_ERROR, false);
-    renderStatus(tft, "wifi failed", "opening setup...");
-    delay(3000);
-    runPortal();
-  }
-  Serial.printf("[dg] wifi ok - ip %s\n", WiFi.localIP().toString().c_str());
-
-  renderStatus(tft, "syncing time", "");
-  Serial.println(timeSync() ? "[dg] time synced" : "[dg] time sync failed (continuing)");
-
-  gCfg = cfg;
-  renderStatus(tft, "loading", cfg.tenant.c_str());
-  refreshAll();
-  current = 0;  // start on active problems
-  lastInput = millis();
-  show();
-  Serial.println("[dg] setup complete (live)");
+  // Nothing here returns.
 }
 
-void loop() {
-  Action a = inputPoll();
-  if (a != ACT_NONE) {
-    lastInput = millis();
-    if (asleep) {  // first press only wakes the panel
-      asleep = false;
-      backlight(true);
-      show();
-    } else {
-      switch (a) {
-        case ACT_PREV: gotoScreen(current - 1); break;
-        case ACT_NEXT: gotoScreen(current + 1); break;
-        case ACT_REFRESH:
-          refreshAll();  // middle button = re-query now
-          show();
-          break;
-        case ACT_IDLE: gotoIdle(); break;
-        default: break;
-      }
-    }
-  }
-
-  uint32_t now = millis();
-  if (now - lastRefresh > REFRESH_MS) {
-    refreshAll();  // keep querying even while asleep, so the beacon stays honest
-    if (!asleep) show();
-  }
-
-  if (!asleep && DG_SLEEP_MS > 0 && now - lastInput > (uint32_t)DG_SLEEP_MS) {
-    asleep = true;
-    backlight(false);
-  }
-
-  if (!asleep) renderScrollTick(tft, screens[current]);  // marquee long titles
-
-  delay(20);
-}
+void loop() {}
