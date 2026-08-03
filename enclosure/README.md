@@ -7,11 +7,9 @@ laid out across 6 print plates, ready to slice.
 
 ![overview](renders/overview.png)
 
-## Exploded — core enclosure
+## Assembly — front to back
 
-The main body, the front bezel, and the three button caps:
-
-![exploded core](renders/00_exploded_core.png)
+![assembly build guide](renders/00_assembly_build_guide.png)
 
 ## Parts
 
@@ -49,11 +47,11 @@ Plate names in the project spell out the swaps. Open the `.3mf` in Bambu Studio
 
 [`renders/`](renders/) holds:
 
+- `00_assembly_build_guide.png` — annotated front-to-back assembly guide
+  (battery → Feather → button caps → snap-on front).
 - `overview.png` — labelled contact sheet of all six plates.
-- `00_exploded_core.png` — generated from the meshes (support-free, colour-coded).
 - `01…06_*.png` — the slicer's own 512×512 plate previews, extracted from the `.3mf`.
 
-> The `.3mf` is a print-plate project (parts laid flat for printing), so it
-> carries no authored assembled/exploded transforms. The exploded image is a
-> composed parts-separated view of the core enclosure; the plate previews show
-> each plate as it prints.
+> The `.3mf` itself is a print-plate project (parts laid flat for printing); the
+> plate previews show each plate as it prints. The assembly guide is a rendered
+> view of the parts in their assembled relationship.
