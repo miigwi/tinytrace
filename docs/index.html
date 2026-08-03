@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tinytrace — a tiny standalone Dynatrace desk panel</title>
+<meta name="description" content="A tiny standalone Dynatrace desk panel on an ESP32-S3 Reverse TFT Feather: active problems, golden signals and recent logs — plus a one-button game and a 3D-printed magnetic case.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta property="og:title" content="Tinytrace">
+<meta property="og:description" content="A tiny standalone Dynatrace desk panel on an ESP32-S3 Feather — glanceable problems, golden signals and logs.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07030f; --bg2:#0d0820; --panel:#120a2c; --edge:#2a1a4e;
+    --ink:#dfe6f2; --dim:#8b93a1;
+    --cyan:#2ee6ff; --amber:#ffb02e; --pink:#ff2e88; --red:#ff3050; --ok:#2effa8; --violet:#7a3cff;
+    --retro:'Press Start 2P', ui-monospace, monospace;
+    --mono:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  a{color:var(--cyan);text-decoration:none;} a:hover{text-decoration:underline;}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px;}
+  section{padding:64px 0;border-top:1px solid #170f2e;}
+  h2{font-size:clamp(20px,3.4vw,30px);margin-bottom:8px;letter-spacing:.5px;}
+  h2 .n{font-family:var(--retro);font-size:.5em;color:var(--violet);margin-right:12px;vertical-align:middle;}
+  .lead{color:var(--dim);max-width:70ch;margin-bottom:28px;}
+  code,kbd{font-family:var(--mono);}
+  kbd{background:#160e30;border:1px solid var(--edge);border-bottom-width:2px;border-radius:5px;
+    padding:1px 6px;font-size:.85em;color:var(--ink);}
+  .accent{color:var(--amber);} .cy{color:var(--cyan);} .pk{color:var(--pink);} .rd{color:var(--red);}
+
+  /* hero */
+  header.hero{position:relative;padding:96px 0 72px;text-align:center;
+    background:radial-gradient(1200px 500px at 50% -10%, #1a0e34 0%, var(--bg) 60%);}
+  .badge{display:inline-block;font-family:var(--retro);font-size:9px;color:var(--amber);
+    border:1px solid var(--edge);border-radius:999px;padding:7px 12px;margin-bottom:22px;letter-spacing:1px;}
+  .hero h1{font-family:var(--retro);font-size:clamp(30px,7vw,64px);line-height:1.15;
+    color:var(--pink);text-shadow:0 0 22px rgba(255,46,136,.35),4px 4px 0 #2a0a1a;}
+  .hero h1 span{color:var(--cyan);text-shadow:0 0 22px rgba(46,230,255,.35),4px 4px 0 #0a2833;}
+  .hero p.tag{margin:22px auto 0;max-width:64ch;color:#b9c2d6;font-size:clamp(15px,2vw,18px);}
+  .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:30px;}
+  .btn{font-family:var(--retro);font-size:11px;padding:13px 18px;border-radius:10px;border:2px solid var(--cyan);
+    color:var(--cyan);background:#0c1226;transition:.15s;}
+  .btn:hover{background:#12203f;box-shadow:0 0 16px rgba(46,230,255,.3);text-decoration:none;}
+  .btn.solid{border-color:var(--pink);color:#fff;background:linear-gradient(180deg,#3a0f28,#210a1a);}
+  .btn.solid:hover{box-shadow:0 0 16px rgba(255,46,136,.4);}
+
+  /* device panel mock */
+  .panel-mock{margin:44px auto 0;max-width:560px;background:#000;border:3px solid var(--edge);
+    border-radius:10px;padding:18px 20px;box-shadow:0 0 0 8px #0c0820,0 24px 60px rgba(0,0,0,.6);
+    text-align:left;overflow-x:auto;}
+  .panel-mock pre{font-family:var(--mono);font-size:13px;line-height:1.5;color:#cfe;white-space:pre;}
+  .panel-mock .dot{color:var(--red);} .panel-mock .g{color:var(--dim);}
+
+  /* generic grid + cards */
+  .grid{display:grid;gap:18px;}
+  .g2{grid-template-columns:repeat(2,1fr);} .g3{grid-template-columns:repeat(3,1fr);}
+  @media(max-width:720px){.g2,.g3{grid-template-columns:1fr;}}
+  .card{background:linear-gradient(180deg,#100a24,#0b0718);border:1px solid var(--edge);
+    border-radius:14px;padding:22px;}
+  .card h3{font-size:18px;margin-bottom:6px;} .card p{color:var(--dim);font-size:15px;}
+  .card .k{font-family:var(--retro);font-size:9px;color:var(--violet);letter-spacing:1px;}
+  .pill{display:inline-block;font-size:12px;color:var(--cyan);border:1px solid var(--edge);
+    border-radius:999px;padding:2px 10px;margin:3px 4px 0 0;background:#0c1226;}
+
+  /* tables */
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14.5px;}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid #1c1536;vertical-align:top;}
+  th{color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.4px;text-transform:uppercase;}
+  td code{color:var(--cyan);}
+
+  /* enclosure figures */
+  figure{margin:0;border:1px solid var(--edge);border-radius:14px;overflow:hidden;background:#0b0718;}
+  figure img{display:block;width:100%;height:auto;background:#f2f3f5;}
+  figcaption{padding:10px 14px;color:var(--dim);font-size:13px;border-top:1px solid var(--edge);}
+
+  .note{border-left:3px solid var(--amber);background:#160f04;border-radius:0 10px 10px 0;
+    padding:12px 16px;color:#e6d9bd;font-size:14.5px;margin-top:16px;}
+  .note.cy{border-color:var(--cyan);background:#04141a;color:#c9edf6;}
+
+  pre.sh{background:#050310;border:1px solid var(--edge);border-radius:10px;padding:14px 16px;
+    overflow-x:auto;font-family:var(--mono);font-size:13.5px;color:var(--ok);margin-top:14px;}
+  .muted{color:var(--dim);font-size:14px;}
+
+  footer{padding:48px 0;text-align:center;color:var(--dim);border-top:1px solid #170f2e;font-size:14px;}
+  footer .rn{font-family:var(--retro);font-size:10px;color:var(--edge);}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">ESP32-S3 · REVERSE TFT FEATHER</span>
+    <h1>TINY<span>TRACE</span></h1>
+    <p class="tag">A tiny <strong>standalone Dynatrace desk panel</strong>: active problems, golden
+      signals and recent logs on a 1.14&quot; screen you can glance at instead of opening a tab.
+      Talks <strong>directly</strong> to your Grail tenant over HTTPS — no companion app, no sidecar.</p>
+    <div class="cta">
+      <a class="btn solid" href="https://github.com/miigwi/tinytrace">View on GitHub</a>
+      <a class="btn" href="#build">Build one</a>
+      <a class="btn" href="#enclosure">The case</a>
+    </div>
+
+    <div class="panel-mock" aria-label="Tinytrace golden-signals screen mock">
+<pre><span class="dot">&#9679;</span> checkout          22:14   <span class="g">header dot + service, local time</span>
+LAT   128 ms  &#9601;&#9602;&#9603;&#9605;&#9607;&#9606;  &#9650;
+TPS   2.4k    &#9603;&#9603;&#9604;&#9605;&#9604;&#9605;  &#9658;   <span class="g">golden signals, top-worst service</span>
+ERR   3.1 %   &#9601;&#9601;&#9602;&#9601;&#9603;&#9608;  &#9650;   <span class="g">LAT p99 &middot; TPS &middot; ERR &middot; 4xx</span>
+4xx   0.4     &#9601;&#9601;&#9601;&#9602;&#9601;&#9601;  &#9658;</pre>
+    </div>
+  </div>
+</header>
+
+<section id="what">
+  <div class="wrap">
+    <h2><span class="n">01</span>Why standalone</h2>
+    <p class="lead">On a Grail tenant, logs are DQL-only — so the device needs a DQL client no matter
+      what. Given that, <strong>one read-only platform token + all-DQL</strong> is the least code and
+      makes a true appliance: no laptop that has to be awake for the thing on your desk to work.
+      Plug it into any USB charger and it just works.</p>
+    <div class="grid g3">
+      <div class="card"><div class="k">GLANCEABLE</div><h3>Is the light red?</h3>
+        <p>The onboard NeoPixel is the beacon — green / amber / red for the worst severity on the
+          current screen, blue when the data is stale.</p></div>
+      <div class="card"><div class="k">DIRECT</div><h3>No sidecar</h3>
+        <p>HTTPS straight to <code>{env}.apps.dynatrace.com</code> with a scoped, read-only platform
+          token stored in NVS. Nothing baked into the firmware.</p></div>
+      <div class="card"><div class="k">THREE BUTTONS</div><h3>No touch</h3>
+        <p><kbd>D0</kbd> previous &middot; <kbd>D2</kbd> next &middot; <kbd>D1</kbd> refresh
+          (long-press &rarr; idle/mascot). Refreshed every 60&nbsp;s into RAM.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="apps">
+  <div class="wrap">
+    <h2><span class="n">02</span>One image, two apps</h2>
+    <p class="lead">A launcher comes up on every reset — <kbd>D0</kbd> up, <kbd>D2</kbd> down,
+      <kbd>D1</kbd> select — and hands the device to whichever you pick.</p>
+    <div class="grid g2">
+      <div class="card">
+        <div class="k" style="color:var(--cyan)">THE PANEL</div>
+        <h3>Tinytrace</h3>
+        <p>Four screens built on-device from DQL, refreshed every 60&nbsp;s (buttons switch instantly).
+          If there's no WiFi or tenant, it boots a <strong>demo mode</strong> instead of nagging you.</p>
+        <table>
+          <tr><th>Screen</th><th>What</th></tr>
+          <tr><td class="cy">active problems</td><td><code>fetch dt.davis.problems</code> — active, deduped (24&nbsp;h)</td></tr>
+          <tr><td class="cy">golden signals</td><td>top-worst service: LAT p99 · TPS · ERR · 4xx</td></tr>
+          <tr><td class="cy">last logs</td><td><code>fetch logs | filter loglevel in {ERROR,WARN}</code></td></tr>
+          <tr><td class="cy">idle</td><td>mascot + active-problem count</td></tr>
+        </table>
+      </div>
+      <div class="card" style="background:linear-gradient(180deg,#12071c,#0a0512);border-color:#3a1330;">
+        <div class="k" style="color:var(--pink)">JUST FOR FUN</div>
+        <h3>Trace Runner</h3>
+        <p>A one-button noir endless runner. Agent Decoder runs the graveyard shift and you keep the
+          SLO alive — <kbd>D1</kbd> = jump, held = higher.</p>
+        <p style="margin-top:10px">Clear gaps, steam vents and patrol drones; grab data shards and
+          origami unicorns. A hit costs SLO (the NeoPixel is the SLO beacon); 0&nbsp;% ends the shift
+          with a rank. Best score persists to NVS. Fully offline.</p>
+        <div style="margin-top:12px">
+          <span class="pill">variable jump</span><span class="pill">parallax city</span>
+          <span class="pill">rain &amp; lightning</span><span class="pill">SLO = health</span>
+          <span class="pill">rank ladder</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="configure">
+  <div class="wrap">
+    <h2><span class="n">03</span>Configure &amp; connect</h2>
+    <p class="lead">Everything is provisioned over a captive portal from the launcher's
+      <strong>Settings</strong> entry — no secrets are ever compiled in.</p>
+    <div class="grid g3">
+      <div class="card"><div class="k">SETTINGS</div><h3>Config portal</h3>
+        <p>Join the open WiFi <code>dynaglance-setup</code>, open <code>192.168.4.1</code>, and manage
+          <strong>WiFi networks</strong> and <strong>Dynatrace tenants</strong> — each a list you add
+          to, select from, or reset. Apply &amp; restart.</p></div>
+      <div class="card"><div class="k">READ-ONLY</div><h3>Scoped token</h3>
+        <p>Create a platform token scoped to
+          <code>storage:logs:read</code>, <code>metrics:read</code>, <code>events:read</code>,
+          <code>buckets:read</code>. Revocable from the tokens page.</p></div>
+      <div class="card"><div class="k">OFFLINE</div><h3>Demo mode</h3>
+        <p>No WiFi selected or reachable? The panel shows a canned <em>DEMO MODE</em> set of the four
+          screens, so the device is useful on any desk.</p></div>
+    </div>
+    <div class="note cy">TLS validates the tenant against a <strong>pinned root-CA bundle</strong> —
+      no <code>setInsecure</code> in normal builds. A stolen gadget is just a revocable, read-only token.</div>
+  </div>
+</section>
+
+<section id="enclosure">
+  <div class="wrap">
+    <h2><span class="n">04</span>The case — v35</h2>
+    <p class="lead">A 3D-printed magnetic-mount case for the Feather, plus a pack of snap-on magnetic
+      hats — each with a Dynatrace logo. Authored as a Bambu Studio project (8 parts, 6 plates).</p>
+    <div class="grid g2">
+      <figure>
+        <img src="assets/assembly_build_guide.png" alt="Exploded assembly guide: battery, Feather, button caps, snap-on front">
+        <figcaption>Assembly, front to back — battery &rarr; Feather onto four holders &rarr; D0/D1/D2 caps &rarr; snap-on front.</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/overview.png" alt="All six print plates: main enclosure, bodies and four hats">
+        <figcaption>The print plates — main enclosure, the two body variants, and the baseball cap, bobble &amp; loose beanies, and cowboy hat.</figcaption>
+      </figure>
+    </div>
+    <div class="grid g2" style="margin-top:18px">
+      <div class="card"><div class="k">MAGNETS</div><h3>3 × 1 mm neodymium discs</h3>
+        <p>One in the mount body, one in each hat — dropped in at a print pause and sealed over, no
+          glue. Mind the polarity so the hat attracts.</p>
+        <table>
+          <tr><th>Plate</th><th>Pause</th></tr>
+          <tr><td>Main body — magnetic mount</td><td>layer <code>286</code></td></tr>
+          <tr><td>Each hat</td><td>layer <code>9</code></td></tr>
+        </table>
+      </div>
+      <div class="card"><div class="k">PRINT</div><h3>Bambu Lab H2C · 0.4 mm</h3>
+        <table>
+          <tr><td>Layer height</td><td>0.16 mm</td></tr>
+          <tr><td>Walls / infill</td><td>2 walls · 15 %</td></tr>
+          <tr><td>Supports</td><td>tree (organic), enclosure only</td></tr>
+          <tr><td>Material</td><td>PLA + translucent IO window + TPU 90A</td></tr>
+        </table>
+        <p class="muted" style="margin-top:10px">Project &amp; renders live in
+          <a href="https://github.com/miigwi/tinytrace/tree/main/enclosure">/enclosure</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="build">
+  <div class="wrap">
+    <h2><span class="n">05</span>Build one</h2>
+    <div class="grid g2">
+      <div>
+        <h3 style="margin-bottom:8px">Hardware</h3>
+        <table>
+          <tr><th>Item</th><th>Notes</th></tr>
+          <tr><td><a href="https://www.adafruit.com/product/5691">Adafruit ESP32-S3 Reverse TFT Feather</a></td>
+            <td>1.14&quot; 240×135 ST7789, 3 buttons, NeoPixel, USB-C. The only required part (~€25).</td></tr>
+          <tr><td>USB-C + 5 V supply</td><td>Any phone charger.</td></tr>
+          <tr><td>LiPo battery <span class="muted">(optional)</span></td><td>JST-PH 3.7 V. Mind the polarity.</td></tr>
+          <tr><td>3D-printed case <span class="muted">(optional)</span></td><td>~€2 filament + a few magnets.</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3 style="margin-bottom:8px">Flash it</h3>
+        <pre class="sh">cd firmware &amp;&amp; pio run -e tinytrace -t upload</pre>
+        <p class="muted" style="margin-top:10px">The S3's USB can't auto-reset into the bootloader while
+          an app is crashing, so hold it there by hand:</p>
+        <pre class="sh">hold BOOT &rarr; tap RESET &rarr; release BOOT
+&rarr; upload &rarr; tap RESET to run</pre>
+        <div class="note">Use <strong>Adafruit_ST7789</strong>, not TFT_eSPI — its <code>init()</code>
+          crash-loops on this S3 board. (Hard-won.)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><a href="https://github.com/miigwi/tinytrace">github.com/miigwi/tinytrace</a> — firmware, enclosure &amp; docs.</p>
+    <p class="muted" style="margin-top:8px">Read-only, revocable, stored in NVS, never in the firmware.</p>
+    <p class="rn" style="margin-top:18px">TINYTRACE</p>
+  </div>
+</footer>
+
+</body>
+</html>
