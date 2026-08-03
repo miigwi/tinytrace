@@ -16,14 +16,25 @@ into any USB charger and it just works.
    └────────────────────────────┘
 ```
 
-Three front buttons instead of touch: **D0** previous · **D2** next · **D1**
-refresh (long-press → idle/mascot). The onboard **NeoPixel** is the beacon —
-green / amber / red for the worst severity on the current screen, blue when the
-data is stale. Glance at the desk: is the light red?
+## Launcher
 
-## Screens
+One firmware image, a menu on every reset. The three front buttons drive
+everything: **D0** up · **D2** down · **D1** select.
+
+| Entry | What it does |
+|---|---|
+| **TINYTRACE** | the Dynatrace desk panel (live if configured, else demo) |
+| **TRACE RUNNER** | a one-button noir endless runner — offline, just for fun |
+| **SETTINGS** | → Config Portal · Reset Settings · Back |
+
+Reset returns you to the launcher; that's how you leave an app.
+
+## Tinytrace panel
 
 Built on-device from DQL, refreshed every 60 s into RAM (buttons switch instantly).
+In the panel: **D0** previous · **D2** next · **D1** refresh (long-press →
+idle/mascot). The onboard **NeoPixel** is the beacon — green / amber / red for
+the worst severity on the current screen, blue when the data is stale.
 
 | Screen | Query |
 |---|---|
@@ -34,6 +45,41 @@ Built on-device from DQL, refreshed every 60 s into RAM (buttons switch instantl
 
 The panel blanks after 5 min untouched (any button wakes it); it keeps querying
 while asleep so the beacon stays honest.
+
+**Demo mode.** If no WiFi is selected/reachable, or no tenant is configured, the
+panel boots **non-connected** and shows a canned "DEMO MODE" set of the four
+screens instead of opening a portal. Configure it (below) to go live.
+
+## Trace Runner
+
+A one-button noir endless runner, ported in spirit from
+[trace-runner](https://github.com/miigwi/trace-runner): Agent Decoder runs the
+graveyard shift and you keep the SLO alive. **D1 = jump, held = higher.** Clear
+gaps, steam vents and patrol drones; grab data shards and origami unicorns; a
+hit costs SLO (the NeoPixel is the SLO beacon) and 0 % ends the shift with a
+rank. Best score persists to NVS. Offline — no WiFi or tenant needed.
+
+## Configuration (WiFi & Dynatrace)
+
+**SETTINGS → Config Portal** brings up a captive portal:
+
+1. Join the open WiFi **`dynaglance-setup`**.
+2. Open **`192.168.4.1`** (most phones pop it automatically).
+3. Manage **WiFi networks** and **Dynatrace tenants** — each as a list you can
+   add to, pick which one is in use, or reset. Then **Apply & Restart**.
+
+Multiple networks and tenants can be stored; the device connects to the selected
+pair on boot. Everything lives in NVS and survives reflashes — nothing is baked
+into the firmware. **SETTINGS → Reset Settings** wipes all networks and tenants
+back to the non-connected state.
+
+Create the token at
+[myaccount.dynatrace.com → Platform tokens](https://myaccount.dynatrace.com/platformTokens),
+scoped **read-only**:
+
+```
+storage:logs:read   storage:metrics:read   storage:events:read   storage:buckets:read
+```
 
 ## Why standalone (and why all-DQL)
 
@@ -55,24 +101,6 @@ appliance: no laptop that has to be awake for the thing on your desk to work.
 | **Adafruit ESP32-S3 Reverse TFT Feather** ([#5691](https://www.adafruit.com/product/5691)) | ~€25 | 1.14" 240×135 ST7789, 3 buttons, NeoPixel, USB-C. The only required part. |
 | USB-C cable + 5 V supply | — | Any phone charger. |
 | LiPo battery (optional) | — | JST-PH. **Mind the polarity** — many third-party cells are wired opposite Adafruit's. |
-
-## Provisioning
-
-First boot (or hold **D1** at reset) starts a captive portal:
-
-1. Join the open WiFi **`dynaglance-setup`**.
-2. Open **`192.168.4.1`** (most phones pop it automatically).
-3. Enter WiFi, the tenant URL (`https://<env>.apps.dynatrace.com`), and the token.
-
-It's stored in NVS and survives reflashes. Nothing is baked into the firmware.
-
-Create the token at
-[myaccount.dynatrace.com → Platform tokens](https://myaccount.dynatrace.com/platformTokens),
-scoped **read-only**:
-
-```
-storage:logs:read   storage:metrics:read   storage:events:read   storage:buckets:read
-```
 
 ## Flashing
 
@@ -108,24 +136,28 @@ revocable read-only token you kill from the tokens page.
 | | |
 |---|---|
 | ✅ | Builds (`pio run -e tinytrace`) |
-| ✅ | On hardware: captive-portal provisioning, WiFi, SNTP |
+| ✅ | On hardware (original single-app firmware): captive-portal provisioning, WiFi, SNTP |
 | ✅ | On hardware: TLS + platform-token auth against a live Grail tenant |
 | ✅ | On hardware: live active-problems / golden-signals / last-logs screens |
-| ⬜ | Golden-signals 4xx query + marquee + local-TZ refinements — compile-clean, pending a confirmation flash |
+| ⬜ | Launcher, Trace Runner, multi-network/tenant Settings, and demo mode — compile-clean, **not yet flashed** |
 
 ## Layout
 
 ```
 firmware/
-  platformio.ini    env: tinytrace (board adafruit_feather_esp32s3_reversetft)
+  platformio.ini      env: tinytrace (board adafruit_feather_esp32s3_reversetft)
   src/
-    main.cpp        app loop: provision → connect → refresh loop
-    config.*        NVS store + captive-portal provisioning
-    net.*           WiFi + SNTP
-    dt.*            DQL client over TLS (execute + poll)
-    dt_screens.*    the four DQL screen builders
-    render.*        list + golden-signals (sparkline) renderer, marquee
-    hal.h / board.cpp   buttons → actions, NeoPixel beacon, power rail
-    model.h         Screen/Row model
-    certs.h         pinned root-CA bundle
+    main.cpp          boot launcher: menu → TINYTRACE / TRACE RUNNER / SETTINGS
+    app.h             app entry points (tinytraceRun / tracerunnerRun)
+    tinytrace_app.*   the panel: connect → live refresh loop, or demo mode
+    game_tracerunner.cpp  one-button endless runner (own canvas + sprites)
+    demo.*            canned "DEMO MODE" screens for non-connected boots
+    config.*          Settings store (WiFi + tenant lists in NVS) + captive portal
+    net.*             WiFi + SNTP
+    dt.*              DQL client over TLS (execute + poll)
+    dt_screens.*      the four DQL screen builders
+    render.*          list + golden-signals (sparkline) renderer, marquee
+    hal.h / board.cpp buttons → actions, NeoPixel beacon, power rail
+    model.h           Screen/Row model
+    certs.h           pinned root-CA bundle
 ```

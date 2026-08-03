@@ -90,8 +90,6 @@ Action inputPoll() {
   return ACT_NONE;
 }
 
-bool provisioningHeld() { return pressed(BTN_D1); }
-
 bool btnDown(uint8_t d) {
   int pin = d == 0 ? BTN_D0 : d == 1 ? BTN_D1 : BTN_D2;
   return pressed(pin);

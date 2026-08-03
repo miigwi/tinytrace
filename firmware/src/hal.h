@@ -21,11 +21,6 @@ enum Action : uint8_t {
 void inputBegin();
 Action inputPoll();
 
-// provisioningHeld reports whether the middle button (D1) is held right now.
-// Checked once at boot to force the captive portal even when config exists —
-// the escape hatch for wrong WiFi/tenant/token.
-bool provisioningHeld();
-
 // btnDown reports the instantaneous state of one button (d = 0/1/2 → D0/D1/D2),
 // bypassing inputPoll's release-latching. The launcher menu and the game need
 // the raw held state (e.g. hold-to-jump-higher), not tap-on-release actions.
