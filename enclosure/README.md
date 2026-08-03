@@ -27,6 +27,17 @@ laid out across 6 print plates, ready to slice.
 Each hat conceals a magnet and clips onto the mount body; the logo and accents
 are separate-colour parts printed in the same job.
 
+## Magnets
+
+Both halves of the magnetic coupling take a **3 × 1 mm neodymium disc magnet**
+(3 mm diameter, 1 mm thick): one in the mount body, and one in each hat you
+print. The magnets are dropped in mid-print at a **print pause** (see below) and
+sealed over by the following layers — no glue needed.
+
+> ⚠ **Mind the polarity.** The magnet in a hat must *attract* the one in the
+> mount body — seat them with opposite poles facing out, or the hat will push
+> off instead of snapping on.
+
 ## Printing
 
 Sliced for a **Bambu Lab H2C**, 0.4 mm nozzle, from the bundled project:
@@ -38,10 +49,18 @@ Sliced for a **Bambu Lab H2C**, 0.4 mm nozzle, from the bundled project:
 | Supports | tree (organic), auto, on build plate only — main enclosure |
 | Bed | textured plate |
 | Material | PLA (Matte / Basic), **PLA Translucent** for the IO window, PLA Wood accent, **TPU 90A** |
-| Colour | multi-material; plates carry filament-change **pauses** (e.g. "PAUSE 286", "PAUSE 9") for the logos and accents |
+| Colour | multi-material (per-part filament map) — logos and accents print in the same job |
 
-Plate names in the project spell out the swaps. Open the `.3mf` in Bambu Studio
-/ OrcaSlicer to inspect per-plate filament maps and pause layers.
+**Print pauses — insert a magnet.** The magnetic plates stop mid-print so you can
+drop the disc magnet into its pocket before it's enclosed:
+
+| Plate | Pause | Action |
+|---|---|---|
+| Main body — magnetic mount (plate 1) | **layer 286** | seat one 3 × 1 mm magnet, resume |
+| Each hat (plates 3–6) | **layer 9** | seat one 3 × 1 mm magnet, resume |
+
+Open the `.3mf` in Bambu Studio / OrcaSlicer to inspect per-plate filament maps
+and the pause layers.
 
 ## Renders
 
@@ -49,9 +68,4 @@ Plate names in the project spell out the swaps. Open the `.3mf` in Bambu Studio
 
 - `00_assembly_build_guide.png` — annotated front-to-back assembly guide
   (battery → Feather → button caps → snap-on front).
-- `overview.png` — labelled contact sheet of all six plates.
-- `01…06_*.png` — the slicer's own 512×512 plate previews, extracted from the `.3mf`.
-
-> The `.3mf` itself is a print-plate project (parts laid flat for printing); the
-> plate previews show each plate as it prints. The assembly guide is a rendered
-> view of the parts in their assembled relationship.
+- `overview.png` — labelled contact sheet of all six print plates.
