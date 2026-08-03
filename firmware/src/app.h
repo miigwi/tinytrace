@@ -6,10 +6,10 @@
 
 #include <Adafruit_ST7789.h>
 
-// The Dynatrace desk panel. forcePortal jumps straight into captive-portal
-// provisioning even when a config exists (the launcher sets it when D0 is held
-// at selection time).
-void tinytraceRun(Adafruit_ST7789 &tft, bool forcePortal);
+// The Dynatrace desk panel. Runs live if the selected WiFi + tenant connect,
+// otherwise boots non-connected in demo mode. Provisioning lives in the
+// launcher's Settings entry, not here.
+void tinytraceRun(Adafruit_ST7789 &tft);
 
 // Trace Runner — the one-button noir endless runner. D1 = jump (hold = higher).
 void tracerunnerRun(Adafruit_ST7789 &tft);
