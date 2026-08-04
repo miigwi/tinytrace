@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="ext-resource-dependency" content="./tinytrace_geo.bin" data-resource-id="geoBin" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/three@0.184.0/build/three.module.js" data-resource-id="threeModule" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/three@0.184.0/build/three.core.js" data-resource-id="threeCore" />
+<script src="./support.js"></script>
+<template id="__bundler_thumbnail" data-bg-color="#edeae4">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#edeae4"/>
+    <rect x="700" y="300" width="260" height="220" rx="26" fill="#b8b2a8"/>
+    <rect x="470" y="330" width="170" height="200" rx="20" fill="#b8b2a8"/>
+    <rect x="505" y="365" width="100" height="80" rx="8" fill="#14503a"/>
+    <circle cx="668" cy="372" r="16" fill="#d9702f"/>
+    <circle cx="668" cy="420" r="16" fill="#d9702f"/>
+    <circle cx="668" cy="468" r="16" fill="#d9702f"/>
+    <rect x="770" y="200" width="120" height="70" rx="14" fill="#a87c52"/>
+    <rect x="720" y="258" width="220" height="26" rx="13" fill="#a87c52"/>
+    <circle cx="340" cy="430" r="34" fill="#2f3237"/>
+    <circle cx="1030" cy="330" r="34" fill="#2f3237"/>
+  </svg>
+</template>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #f4f2ee; }
+  body { font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #2f3237; -webkit-font-smoothing: antialiased; }
+  a { color: #b8551b; text-decoration: none; border-bottom: 1px solid rgba(184,85,27,.35); }
+  a:hover { color: #8f3f11; border-bottom-color: rgba(143,63,17,.6); }
+  * { box-sizing: border-box; }
+</style>
+</helmet>
+
+<div style="height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr); background: #f4f2ee;">
+
+  <header style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; padding: 26px 34px 20px; border-bottom: 1px solid #ddd9d1;">
+    <div style="display: flex; flex-direction: column; gap: 7px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #6f6b64;">Tinytrace &nbsp;/&nbsp; build guide</div>
+      <h1 style="margin: 0; font-size: 27px; font-weight: 600; letter-spacing: -.015em; line-height: 1.1;">Main enclosure assembly</h1>
+    </div>
+    <div style="display: grid; grid-template-columns: auto auto; gap: 4px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #6f6b64; text-align: right; padding-bottom: 3px;">
+      <span>Enclosure</span><span style="color: #2f3237;">57.9 × 28.5 × 46 mm</span>
+      <span>Steps</span><span style="color: #2f3237;">6</span>
+      <span>Fasteners</span><span style="color: #2f3237;">none — friction &amp; magnet</span>
+    </div>
+  </header>
+
+  <main style="display: grid; grid-template-columns: 384px 1fr; min-height: 0;">
+
+    <aside style="display: flex; flex-direction: column; min-height: 0; border-right: 1px solid #ddd9d1; background: #f9f7f4;">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 18px 20px 16px; border-bottom: 1px solid #e6e2da;">
+        <button onClick="{{ setExplode }}" style="font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; font-weight: 500; padding: 9px 10px; border: 1px solid #d7d2c9; border-radius: 3px; cursor: pointer; transition: background .15s, color .15s; background: {{ mExpBg }}; color: {{ mExpFg }};">Exploded view</button>
+        <button onClick="{{ setSteps }}" style="font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; font-weight: 500; padding: 9px 10px; border: 1px solid #d7d2c9; border-radius: 3px; cursor: pointer; transition: background .15s, color .15s; background: {{ mStpBg }}; color: {{ mStpFg }};">Step by step</button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 1px solid #e6e2da;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #6f6b64;">View</span>
+        <div style="display: flex; gap: 4px; flex: 1;">
+          <button onClick="{{ vIso }}" style="flex: 1; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 6px 4px; border: 1px solid #e0dbd2; border-radius: 3px; cursor: pointer; color: #2f3237; background: {{ vIsoBg }};">¾</button>
+          <button onClick="{{ vFront }}" style="flex: 1; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 6px 4px; border: 1px solid #e0dbd2; border-radius: 3px; cursor: pointer; color: #2f3237; background: {{ vFrontBg }};">Front</button>
+          <button onClick="{{ vRight }}" style="flex: 1; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 6px 4px; border: 1px solid #e0dbd2; border-radius: 3px; cursor: pointer; color: #2f3237; background: {{ vRightBg }};">Side</button>
+          <button onClick="{{ vTop }}" style="flex: 1; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 6px 4px; border: 1px solid #e0dbd2; border-radius: 3px; cursor: pointer; color: #2f3237; background: {{ vTopBg }};">Top</button>
+        </div>
+      </div>
+
+      <ol onMouseLeave="{{ clearHover }}" style="list-style: none; margin: 0; padding: 10px 12px 16px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; flex: 1; min-height: 0;">
+
+        <li onClick="{{ pick1 }}" onMouseEnter="{{ hov1 }}" style="display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; padding: 13px 14px; border-radius: 4px; cursor: pointer; transition: background .15s, box-shadow .15s; background: {{ rowBg1 }}; box-shadow: {{ rowSh1 }};">
+          <span style="width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; transition: background .15s, color .15s; background: {{ badgeBg1 }}; color: {{ badgeFg1 }};">1</span>
+          <span style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 14px; font-weight: 600; letter-spacing: -.005em;">Main enclosure</span>
+            <span style="font-size: 12.5px; line-height: 1.45; color: #6f6b64; text-wrap: pretty;">Printed as one piece. The transparent IO window is printed in place — nothing to fit.</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #74706a;">1 × printed body</span>
+          </span>
+        </li>
+
+        <li onClick="{{ pick2 }}" onMouseEnter="{{ hov2 }}" style="display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; padding: 13px 14px; border-radius: 4px; cursor: pointer; transition: background .15s, box-shadow .15s; background: {{ rowBg2 }}; box-shadow: {{ rowSh2 }};">
+          <span style="width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; transition: background .15s, color .15s; background: {{ badgeBg2 }}; color: {{ badgeFg2 }};">2</span>
+          <span style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 14px; font-weight: 600; letter-spacing: -.005em;">LiPo 400 mAh</span>
+            <span style="font-size: 12.5px; line-height: 1.45; color: #6f6b64; text-wrap: pretty;">Goes in diagonally from above and stands upright against the back wall, taped top angled toward the front. Route the lead up the right side.</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #74706a;">25 × 17 × 3 mm · JST-PH 2-pin</span>
+          </span>
+        </li>
+
+        <li onClick="{{ pick3 }}" onMouseEnter="{{ hov3 }}" style="display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; padding: 13px 14px; border-radius: 4px; cursor: pointer; transition: background .15s, box-shadow .15s; background: {{ rowBg3 }}; box-shadow: {{ rowSh3 }};">
+          <span style="width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; transition: background .15s, color .15s; background: {{ badgeBg3 }}; color: {{ badgeFg3 }};">3</span>
+          <span style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 14px; font-weight: 600; letter-spacing: -.005em;">Feather board (Adafruit 5691)</span>
+            <span style="font-size: 12.5px; line-height: 1.45; color: #6f6b64; text-wrap: pretty;">Goes in after the cell, display facing the front opening. Plug the red/black JST lead into the white socket first.</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #74706a;">ESP32-S3 reverse TFT feather</span>
+          </span>
+        </li>
+
+        <li onClick="{{ pick4 }}" onMouseEnter="{{ hov4 }}" style="display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; padding: 13px 14px; border-radius: 4px; cursor: pointer; transition: background .15s, box-shadow .15s; background: {{ rowBg4 }}; box-shadow: {{ rowSh4 }};">
+          <span style="width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; transition: background .15s, color .15s; background: {{ badgeBg4 }}; color: {{ badgeFg4 }};">4</span>
+          <span style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 14px; font-weight: 600; letter-spacing: -.005em;">Button caps D0 · D1 · D2</span>
+            <span style="font-size: 12.5px; line-height: 1.45; color: #6f6b64; text-wrap: pretty;">Load from behind the front, not from the outside. Hold them in their pockets while the bezel goes on.</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #74706a;">3 × printed · 1.2 mm travel</span>
+          </span>
+        </li>
+
+        <li onClick="{{ pick5 }}" onMouseEnter="{{ hov5 }}" style="display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; padding: 13px 14px; border-radius: 4px; cursor: pointer; transition: background .15s, box-shadow .15s; background: {{ rowBg5 }}; box-shadow: {{ rowSh5 }};">
+          <span style="width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; transition: background .15s, color .15s; background: {{ badgeBg5 }}; color: {{ badgeFg5 }};">5</span>
+          <span style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 14px; font-weight: 600; letter-spacing: -.005em;">Front bezel</span>
+            <span style="font-size: 12.5px; line-height: 1.45; color: #6f6b64; text-wrap: pretty;">Presses onto the front opening and captures the three caps. Work the perimeter until it sits flush.</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #74706a;">1 × printed · friction fit</span>
+          </span>
+        </li>
+
+        <li onClick="{{ pick6 }}" onMouseEnter="{{ hov6 }}" style="display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; padding: 13px 14px; border-radius: 4px; cursor: pointer; transition: background .15s, box-shadow .15s; background: {{ rowBg6 }}; box-shadow: {{ rowSh6 }};">
+          <span style="width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; transition: background .15s, color .15s; background: {{ badgeBg6 }}; color: {{ badgeFg6 }};">6</span>
+          <span style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 14px; font-weight: 600; letter-spacing: -.005em;">Cowboy hat</span>
+            <span style="font-size: 12.5px; line-height: 1.45; color: #6f6b64; text-wrap: pretty;">Drops onto the top of the enclosure — the concealed magnet does the holding.</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #74706a;">1 × printed · 6 × 2 mm magnet</span>
+          </span>
+        </li>
+
+      </ol>
+
+      <div style="padding: 16px 20px 20px; border-top: 1px solid #e6e2da; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #6f6b64;">
+            <span>Separation</span><span style="color: #2f3237;">{{ stepLabel }}</span>
+          </div>
+          <input type="range" min="0" max="100" value="{{ sliderVal }}" onChange="{{ onSlider }}" style="width: 100%; accent-color: {{ accent }}; cursor: pointer;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <button onClick="{{ prev }}" style="font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; padding: 8px; border: 1px solid #d7d2c9; border-radius: 3px; background: #fff; color: #2f3237; cursor: pointer;" style-hover="border-color: #b8b2a8;">← Previous</button>
+          <button onClick="{{ next }}" style="font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; padding: 8px; border: 1px solid #d7d2c9; border-radius: 3px; background: #fff; color: #2f3237; cursor: pointer;" style-hover="border-color: #b8b2a8;">Next step →</button>
+        </div>
+      </div>
+
+    </aside>
+
+    <section style="position: relative; min-height: 0; min-width: 0; background: #edeae4; display: grid;">
+      <x-import component-from-global-scope="explode-stage" from="./explode-stage.js" hint-size="100%,100%" style="width: 100%; height: 100%; --badge-font: 'IBM Plex Sans', sans-serif;" mode="{{ mode }}" explode="{{ explodeAttr }}" step="{{ step }}" view="{{ view }}" highlight="{{ highlight }}" strap="{{ strapAttr }}" accent="{{ accent }}"></x-import>
+      <div style="position: absolute; left: 20px; right: 20px; bottom: 16px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 24px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .06em; color: #63605a; pointer-events: none;">
+        <span>parts separate along the insertion axis</span>
+        <span>drag to orbit · scroll to zoom</span>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#7a6ba8&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#d9702f&quot;,&quot;#2f6f8f&quot;,&quot;#7a6ba8&quot;,&quot;#3f7d55&quot;],&quot;section&quot;:&quot;Look&quot;},&quot;showMountStrap&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Parts&quot;},&quot;startMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;exploded&quot;,&quot;options&quot;:[&quot;exploded&quot;,&quot;step by step&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+class Component extends DCLogic {
+  state = { mode: 'explode', explode: 1, step: 1, hover: '', view: 'iso', viewNonce: 0 };
+
+  componentDidMount() {
+    if ((this.props.startMode ?? 'exploded') === 'step by step') this.setState({ mode: 'steps' });
+  }
+
+  renderVals() {
+    const acc = this.props.accent ?? '#d9702f';
+    const ink = '#2f3237';
+    const ids = ['shell', 'battery', 'pcb', 'buttons', 'bezel', 'hat'];
+    const v = {};
+    ids.forEach((id, i) => {
+      const n = i + 1;
+      const active = this.state.mode === 'steps' ? this.state.step === n : this.state.hover === id;
+      v['rowBg' + n] = active ? '#ffffff' : 'transparent';
+      v['rowSh' + n] = active ? 'inset 0 0 0 1px ' + acc : 'inset 0 0 0 1px transparent';
+      v['badgeBg' + n] = active ? acc : '#e4e0d8';
+      v['badgeFg' + n] = active ? '#ffffff' : '#585550';
+      v['pick' + n] = () => this.setState({ mode: 'steps', step: n, hover: '' });
+      v['hov' + n] = () => this.setState({ hover: id });
+    });
+    v.clearHover = () => this.setState({ hover: '' });
+    v.mode = this.state.mode;
+    v.step = String(this.state.step);
+    v.explodeAttr = String(this.state.explode);
+    v.sliderVal = Math.round(this.state.explode * 100);
+    v.highlight = this.state.mode === 'explode' ? this.state.hover : '';
+    v.accent = acc;
+    v.strapAttr = (this.props.showMountStrap ?? false) ? 'true' : 'false';
+    v.onSlider = e => this.setState({ mode: 'explode', explode: (+e.target.value) / 100 });
+    v.setExplode = () => this.setState({ mode: 'explode' });
+    v.setSteps = () => this.setState({ mode: 'steps' });
+    v.prev = () => this.setState(s => ({ mode: 'steps', step: Math.max(1, s.step - 1), hover: '' }));
+    v.next = () => this.setState(s => ({ mode: 'steps', step: Math.min(6, s.step + 1), hover: '' }));
+    v.view = this.state.view + '#' + this.state.viewNonce;
+    const setView = k => () => this.setState(s => ({ view: k, viewNonce: s.viewNonce + 1 }));
+    v.vIso = setView('iso'); v.vFront = setView('front'); v.vRight = setView('right'); v.vTop = setView('top');
+    const vbg = k => this.state.view === k ? '#ffffff' : 'transparent';
+    v.vIsoBg = vbg('iso'); v.vFrontBg = vbg('front'); v.vRightBg = vbg('right'); v.vTopBg = vbg('top');
+    v.mExpBg = this.state.mode === 'explode' ? ink : 'transparent';
+    v.mExpFg = this.state.mode === 'explode' ? '#ffffff' : '#6f6b64';
+    v.mStpBg = this.state.mode === 'steps' ? ink : 'transparent';
+    v.mStpFg = this.state.mode === 'steps' ? '#ffffff' : '#6f6b64';
+    v.stepLabel = this.state.mode === 'steps' ? 'Step ' + this.state.step + ' of 6' : Math.round(this.state.explode * 100) + '%';
+    return v;
+  }
+}
+
+</script>
+</body>
+</html>
