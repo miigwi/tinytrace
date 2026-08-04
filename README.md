@@ -63,7 +63,7 @@ rank. Best score persists to NVS. Offline — no WiFi or tenant needed.
 
 **SETTINGS → Config Portal** brings up a captive portal:
 
-1. Join the open WiFi **`dynaglance-setup`**.
+1. Join the open WiFi **`tinytrace-setup`**.
 2. Open **`192.168.4.1`** (most phones pop it automatically).
 3. Manage **WiFi networks** and **Dynatrace tenants** — each as a list you can
    add to, pick which one is in use, or reset. Then **Apply & Restart**.

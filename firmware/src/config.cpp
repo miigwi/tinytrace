@@ -336,7 +336,7 @@ void runPortal() {
   settingsLoad(g_set);
 
   WiFi.mode(WIFI_AP);
-  WiFi.softAP("dynaglance-setup");
+  WiFi.softAP("tinytrace-setup");
   IPAddress ip = WiFi.softAPIP();  // 192.168.4.1
 
   // Catch-all DNS so phones pop the "sign in to network" captive page.

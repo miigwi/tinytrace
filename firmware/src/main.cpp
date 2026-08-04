@@ -140,7 +140,7 @@ static void settingsFlow() {
     waitRelease();
     if (c == 0) {  // captive portal — blocks and reboots on Apply
       beacon(SEV_OK, true);  // blue = setup mode
-      renderStatus(tft, "CONFIG PORTAL", "join wifi 'dynaglance-setup'");
+      renderStatus(tft, "CONFIG PORTAL", "join wifi 'tinytrace-setup'");
       runPortal();
     } else if (c == 1) {  // reset to non-connected state
       if (confirm("RESET?", "erase all networks & tenants")) {
