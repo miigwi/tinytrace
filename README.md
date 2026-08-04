@@ -1,5 +1,7 @@
 # Tinytrace
 
+**Website: [miigwi.github.io/tinytrace](https://miigwi.github.io/tinytrace/)**
+
 A tiny standalone Dynatrace desk panel: **active problems, golden signals, and
 recent logs** on a 1.14" screen you can glance at instead of opening a tab. It
 runs on an **Adafruit ESP32-S3 Reverse TFT Feather** and talks **directly** to
