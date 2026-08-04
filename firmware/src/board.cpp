@@ -80,7 +80,7 @@ Action inputPoll() {
 
   // Middle button held long → the idle/mascot screen, mirroring the CYD's
   // long-press gesture.
-  if (held >= DG_LONGPRESS_MS && which == BTN_D1) return ACT_IDLE;
+  if (held >= TT_LONGPRESS_MS && which == BTN_D1) return ACT_IDLE;
 
   switch (which) {
     case BTN_D0: return ACT_PREV;

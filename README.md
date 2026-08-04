@@ -120,15 +120,15 @@ hold BOOT → tap RESET → release BOOT, then upload → tap RESET to run the a
 > initialises cleanly. (Hard-won — don't switch it back.)
 
 Tunables live as `build_flags` in [platformio.ini](firmware/platformio.ini):
-`DG_ROTATION` (screen orientation), `DG_TZ` (POSIX timezone for the on-panel
-clock), `DG_LONGPRESS_MS`, and `DG_SLEEP_MS`.
+`TT_ROTATION` (screen orientation), `TT_TZ` (POSIX timezone for the on-panel
+clock), `TT_LONGPRESS_MS`, and `TT_SLEEP_MS`.
 
 ## Security
 
 Tinytrace holds a real, if scoped, secret. It's **read-only, revocable, stored
 in NVS, and never in the firmware**. By default TLS validates the tenant against
 a **pinned root-CA bundle** ([certs.h](firmware/src/certs.h)) — `setInsecure`
-lives only behind the `DG_TLS_INSECURE` bring-up flag. A stolen gadget = a
+lives only behind the `TT_TLS_INSECURE` bring-up flag. A stolen gadget = a
 revocable read-only token you kill from the tokens page.
 
 ## What's verified

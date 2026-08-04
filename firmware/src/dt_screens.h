@@ -1,7 +1,7 @@
 // The three live screens, built from DQL results. Each builder runs its query
 // via dt.cpp and formats records into a Screen. On the wire these are the same
 // screens the CYD gets from the Go sidecar — but here the device builds them
-// itself. The problems query is copied verbatim from dynatui/dynaglance's
+// itself. The problems query is copied verbatim from the sidecar's
 // internal/screens/screens.go so the panel and the TUI can't disagree.
 #pragma once
 

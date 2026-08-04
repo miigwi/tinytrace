@@ -14,10 +14,10 @@ bool wifiConnect(const Config &c, uint32_t timeoutMs) {
 }
 
 bool timeSync(uint32_t timeoutMs) {
-  // DG_TZ is a POSIX TZ string (default Central European w/ DST) so the panel
+  // TT_TZ is a POSIX TZ string (default Central European w/ DST) so the panel
   // shows local wall-clock. Grail timestamps are absolute UTC and parsed as such
   // in dt_screens, so ages stay correct regardless of this.
-  configTzTime(DG_TZ, "pool.ntp.org", "time.nist.gov");
+  configTzTime(TT_TZ, "pool.ntp.org", "time.nist.gov");
   uint32_t start = millis();
   while (millis() - start < timeoutMs) {
     if (time(nullptr) > 1700000000) return true;  // clock is set (past 2023-11)
