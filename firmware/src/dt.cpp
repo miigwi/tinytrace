@@ -18,10 +18,10 @@ static bool clientReady = false;
 
 static WiFiClientSecure &secureClient() {
   if (!clientReady) {
-#ifdef DG_TLS_INSECURE
+#ifdef TT_TLS_INSECURE
     client.setInsecure();  // BRING-UP ONLY — no server auth; harden before ship
 #else
-    client.setCACert(DG_ROOT_CAS);
+    client.setCACert(TT_ROOT_CAS);
 #endif
     clientReady = true;
   }

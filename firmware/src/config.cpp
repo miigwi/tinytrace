@@ -6,7 +6,7 @@
 #include <WebServer.h>
 #include <WiFi.h>
 
-static const char *NS = "dynaglance";  // NVS namespace
+static const char *NS = "tinytrace";  // NVS namespace
 static const char *KEY = "settings";   // JSON blob key
 
 // ------------------------------------------------------------------ store
@@ -186,7 +186,7 @@ static void handleRoot() {
   String h = F(
       "<!doctype html><html><head>"
       "<meta name=viewport content=\"width=device-width,initial-scale=1\">"
-      "<title>dynaglance setup</title><style>"
+      "<title>tinytrace setup</title><style>"
       "body{font-family:system-ui,-apple-system,sans-serif;background:#0d1017;color:#e8eaed;margin:0;padding:20px}"
       ".card{max-width:460px;margin:0 auto}"
       "h1{font-size:20px;margin:0 0 2px}p.sub{color:#8b93a1;margin:0 0 14px;font-size:13px}"
@@ -205,7 +205,7 @@ static void handleRoot() {
       ".addbox{border:1px dashed #2a3240;border-radius:8px;padding:4px 12px 12px;margin-top:8px}"
       "small{color:#6b7280}.empty{color:#6b7280;font-size:12px;margin:6px 0}"
       "</style></head><body><div class=card>"
-      "<h1>dynaglance</h1><p class=sub>configuration portal</p>");
+      "<h1>tinytrace</h1><p class=sub>configuration portal</p>");
 
   // ---- WiFi ----
   h += F("<h2>WiFi</h2><h3>Known networks</h3>");
@@ -336,7 +336,7 @@ void runPortal() {
   settingsLoad(g_set);
 
   WiFi.mode(WIFI_AP);
-  WiFi.softAP("dynaglance-setup");
+  WiFi.softAP("tinytrace-setup");
   IPAddress ip = WiFi.softAPIP();  // 192.168.4.1
 
   // Catch-all DNS so phones pop the "sign in to network" captive page.

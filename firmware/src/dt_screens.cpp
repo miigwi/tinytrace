@@ -22,7 +22,7 @@ static time_t timegmPortable(const struct tm *tm) {
   return (time_t)(days * 86400L + tm->tm_hour * 3600L + tm->tm_min * 60L + tm->tm_sec);
 }
 
-// nowHHMM formats the current wall clock as "15:06" in local time (DG_TZ).
+// nowHHMM formats the current wall clock as "15:06" in local time (TT_TZ).
 static String nowHHMM() {
   time_t t = time(nullptr);
   struct tm tm;
@@ -183,7 +183,7 @@ bool buildProblems(const Config &cfg, Screen &out) {
 
   int i = 0;
   for (JsonObjectConst r : recs) {
-    if (i >= DG_MAX_ROWS) break;
+    if (i >= TT_MAX_ROWS) break;
     String name = r["name"].as<String>();
     String aff = joinArr(r["affected"]);
     if (aff.length()) name += " - " + aff;
@@ -225,7 +225,7 @@ bool buildLogs(const Config &cfg, Screen &out) {
   int i = 0;
   Sev worst = SEV_OK;
   for (JsonObjectConst r : recs) {
-    if (i >= DG_MAX_ROWS) break;
+    if (i >= TT_MAX_ROWS) break;
     String lvl = r["loglevel"].as<String>();
     Sev sev = lvl == "ERROR" ? SEV_ERROR : SEV_WARN;
     if (sev > worst) worst = sev;
@@ -253,7 +253,7 @@ static void signalRow(Row &row, const char *label, const char *unit, const doubl
   row.m = fmtNum(last) + (unit && *unit ? String(" ") + unit : String());
   row.sev = sev;
   normSpark(v, n, row.spark);
-  row.nspark = n > DG_SPARK_MAX ? DG_SPARK_MAX : n;
+  row.nspark = n > TT_SPARK_MAX ? TT_SPARK_MAX : n;
   row.trend = trendOf(first, last);
 }
 
@@ -304,12 +304,12 @@ bool buildGolden(const Config &cfg, Screen &out) {
   String sid = firstStr(r["sid"]);
   s.title = svc.isEmpty() ? "service" : svc;  // service name only
 
-  double lat[DG_SPARK_MAX], tps[DG_SPARK_MAX], reqs[DG_SPARK_MAX], fails[DG_SPARK_MAX],
-      rate[DG_SPARK_MAX];
-  int nl = toDoubles(r["lat"].as<JsonArrayConst>(), lat, DG_SPARK_MAX);
-  int np = toDoubles(r["tps"].as<JsonArrayConst>(), tps, DG_SPARK_MAX);
-  int nq = toDoubles(r["reqs"].as<JsonArrayConst>(), reqs, DG_SPARK_MAX);
-  int nf = toDoubles(r["fails"].as<JsonArrayConst>(), fails, DG_SPARK_MAX);
+  double lat[TT_SPARK_MAX], tps[TT_SPARK_MAX], reqs[TT_SPARK_MAX], fails[TT_SPARK_MAX],
+      rate[TT_SPARK_MAX];
+  int nl = toDoubles(r["lat"].as<JsonArrayConst>(), lat, TT_SPARK_MAX);
+  int np = toDoubles(r["tps"].as<JsonArrayConst>(), tps, TT_SPARK_MAX);
+  int nq = toDoubles(r["reqs"].as<JsonArrayConst>(), reqs, TT_SPARK_MAX);
+  int nf = toDoubles(r["fails"].as<JsonArrayConst>(), fails, TT_SPARK_MAX);
 
   for (int i = 0; i < nl; i++) lat[i] /= 1000.0;  // µs → ms
   int nr = nq < nf ? nq : nf;
@@ -336,8 +336,8 @@ bool buildGolden(const Config &cfg, Screen &out) {
     if (dqlQuery(cfg, q4, d4)) {
       JsonArrayConst r4 = d4["result"]["records"].as<JsonArrayConst>();
       if (r4.size() > 0) {
-        double xx[DG_SPARK_MAX];
-        int nx = toDoubles(r4[0]["fourxx"].as<JsonArrayConst>(), xx, DG_SPARK_MAX);
+        double xx[TT_SPARK_MAX];
+        int nx = toDoubles(r4[0]["fourxx"].as<JsonArrayConst>(), xx, TT_SPARK_MAX);
         if (nx > 0) {
           signalRow(s.rows[3], "4xx", "", xx, nx, SEV_INFO);
           nrows = 4;
@@ -357,7 +357,7 @@ bool buildGolden(const Config &cfg, Screen &out) {
 Screen buildIdle(int problemCount, const String &tenant) {
   Screen s;
   s.id = "idle";
-  s.title = "dynaglance";
+  s.title = "tinytrace";
   s.ts = nowHHMM();
   s.env = tenant;
   s.valid = true;

@@ -67,7 +67,7 @@ static uint16_t sevColor(Sev s) {
 
 void renderInit(Adafruit_ST7789 &tft) {
   tft.init(135, 240);  // 1.14" ST7789; power rail is enabled in board.cpp first
-  tft.setRotation(DG_ROTATION);
+  tft.setRotation(TT_ROTATION);
   tft.setTextWrap(false);  // clip long strings rather than wrapping them
   tft.fillScreen(C_BG);
 }

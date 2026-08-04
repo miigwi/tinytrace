@@ -30,7 +30,7 @@
 static Adafruit_ST7789 *gTft = nullptr;
 
 static Config gCfg;
-static Screen screens[DG_MAX_SCREENS];
+static Screen screens[TT_MAX_SCREENS];
 static int screenCount = 0;
 static int current = 0;
 static bool gLive = false;  // live tenant vs. non-connected demo
@@ -94,7 +94,7 @@ static void refreshAll() {
 
 void tinytraceRun(Adafruit_ST7789 &tft) {
   gTft = &tft;
-  Serial.println("[dg] tinytrace start");
+  Serial.println("[tt] tinytrace start");
 
   Settings st;
   settingsLoad(st);
@@ -105,11 +105,11 @@ void tinytraceRun(Adafruit_ST7789 &tft) {
     renderStatus(tft, "connecting", act.ssid.c_str());
     wifiOk = wifiConnect(act);
     if (wifiOk) {
-      Serial.printf("[dg] wifi ok - ip %s\n", WiFi.localIP().toString().c_str());
+      Serial.printf("[tt] wifi ok - ip %s\n", WiFi.localIP().toString().c_str());
       renderStatus(tft, "syncing time", "");
-      Serial.println(timeSync() ? "[dg] time synced" : "[dg] time sync failed (continuing)");
+      Serial.println(timeSync() ? "[tt] time synced" : "[tt] time sync failed (continuing)");
     } else {
-      Serial.println("[dg] wifi failed");
+      Serial.println("[tt] wifi failed");
     }
   }
 
@@ -118,10 +118,10 @@ void tinytraceRun(Adafruit_ST7789 &tft) {
     gCfg = act;
     renderStatus(tft, "loading", act.tenant.c_str());
     refreshAll();
-    Serial.println("[dg] live");
+    Serial.println("[tt] live");
   } else {
-    screenCount = buildDemoScreens(screens, DG_MAX_SCREENS);
-    Serial.println("[dg] non-connected - demo mode");
+    screenCount = buildDemoScreens(screens, TT_MAX_SCREENS);
+    Serial.println("[tt] non-connected - demo mode");
   }
 
   current = 0;
@@ -156,7 +156,7 @@ void tinytraceRun(Adafruit_ST7789 &tft) {
       if (!asleep) show();
     }
 
-    if (!asleep && DG_SLEEP_MS > 0 && now - lastInput > (uint32_t)DG_SLEEP_MS) {
+    if (!asleep && TT_SLEEP_MS > 0 && now - lastInput > (uint32_t)TT_SLEEP_MS) {
       asleep = true;
       backlight(false);
     }

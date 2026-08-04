@@ -68,7 +68,7 @@ Config settingsActive(const Settings &s);
 bool settingsAddWifi(Settings &s, const String &ssid, const String &pass);
 bool settingsAddTenant(Settings &s, const String &url, const String &token);
 
-// runPortal brings up a SoftAP ("dynaglance-setup") + the captive-portal web UI
+// runPortal brings up a SoftAP ("tinytrace-setup") + the captive-portal web UI
 // for managing WiFi networks and tenants, then blocks serving it. Mutations are
 // persisted to NVS immediately; the Apply button reboots. It does not touch the
 // display — the caller shows the join instructions first.

@@ -5,7 +5,7 @@
 // bundle covers whichever issuer {env}.apps.dynatrace.com chains to.
 #pragma once
 
-static const char DG_ROOT_CAS[] = R"CERTS(
+static const char TT_ROOT_CAS[] = R"CERTS(
 -----BEGIN CERTIFICATE-----
 MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF
 ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6
