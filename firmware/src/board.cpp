@@ -1,9 +1,9 @@
 // Feather (ESP32-S3 Reverse TFT) implementation of the HAL.
 //
-// ⚠ Pin macros (TFT_I2C_POWER, PIN_NEOPIXEL, the D0/D1/D2 GPIOs, and their
-// physical left-to-right order) come from Adafruit's board variant and have NOT
-// yet been checked against a board in hand — same honesty as the CYD's touch
-// calibration. If a button feels swapped, adjust the mapping in inputPoll.
+// Pin macros (TFT_I2C_POWER, PIN_NEOPIXEL, TFT_BL) come from Adafruit's board
+// variant. The D0/D1/D2 mapping below has been verified on hardware: D0 = GPIO0
+// (pulled high, reads LOW pressed), D1 = GPIO1 and D2 = GPIO2 (pulled low, read
+// HIGH pressed), matching Adafruit's pinout for the Reverse TFT Feather.
 #include <Adafruit_NeoPixel.h>
 #include <Arduino.h>
 
@@ -82,10 +82,13 @@ Action inputPoll() {
   // long-press gesture.
   if (held >= TT_LONGPRESS_MS && which == BTN_D1) return ACT_IDLE;
 
+  // The panel is mounted rotated 180°, so the button column runs bottom-to-top
+  // relative to the silkscreen: D2 sits at the top of the screen and D0 at the
+  // bottom. Map them to what they point at, not to what they are labelled.
   switch (which) {
-    case BTN_D0: return ACT_PREV;
+    case BTN_D0: return ACT_NEXT;
     case BTN_D1: return ACT_REFRESH;
-    case BTN_D2: return ACT_NEXT;
+    case BTN_D2: return ACT_PREV;
   }
   return ACT_NONE;
 }

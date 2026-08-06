@@ -7,9 +7,9 @@
 // entered from here; that lives behind the launcher's Settings entry.
 //
 // Input (three front buttons, see board.cpp):
-//   D0  → previous screen
+//   D2  → previous screen (the physically upper button — panel is rotated 180°)
 //   D1  → refresh (live only)      ·   D1 long-press → idle / mascot
-//   D2  → next screen
+//   D0  → next screen
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7789.h>
