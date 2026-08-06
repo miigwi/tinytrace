@@ -1,7 +1,8 @@
 // Boot launcher for the Feather.
 //
 // One firmware image, several apps. On every reset this menu comes up; the
-// three front buttons drive it everywhere: D0 = up, D2 = down, D1 = select.
+// three front buttons drive it everywhere: D2 = up, D0 = down, D1 = select.
+// (The panel is mounted rotated 180°, so D2 is the physically upper button.)
 //
 //   TINYTRACE      the Dynatrace desk panel (live if configured, else demo)
 //   TRACE RUNNER   a one-button noir endless runner (offline)
@@ -76,7 +77,7 @@ static void drawList(const char *title, const char *sub, const char *const *item
     tft.print(blurbs[sel]);
   }
   tft.setTextColor(CL_DIM);
-  const char *hint = "D0 up  D2 down  D1 select";
+  const char *hint = "D2 up  D0 down  D1 select";
   tft.setCursor(w / 2 - (int)strlen(hint) * 3, h - 10);
   tft.print(hint);
 }
@@ -169,7 +170,7 @@ void setup() {
   static const char *blurbs[] = {"dynatrace desk panel", "one-button endless runner",
                                  "configure / reset"};
   for (;;) {
-    int c = runMenu("TINYTRACER", "select an app", items, blurbs, 3);
+    int c = runMenu("MENU", "select an app", items, blurbs, 3);
     waitRelease();  // don't let the selecting press leak into the app
     if (c == 0) tinytraceRun(tft);       // never returns
     else if (c == 1) tracerunnerRun(tft);  // never returns

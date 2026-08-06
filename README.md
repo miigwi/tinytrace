@@ -21,7 +21,7 @@ into any USB charger and it just works.
 ## Launcher
 
 One firmware image, a menu on every reset. The three front buttons drive
-everything: **D0** up · **D2** down · **D1** select.
+everything: **D2** up · **D0** down · **D1** select.
 
 | Entry | What it does |
 |---|---|
@@ -34,7 +34,7 @@ Reset returns you to the launcher; that's how you leave an app.
 ## Tinytrace panel
 
 Built on-device from DQL, refreshed every 60 s into RAM (buttons switch instantly).
-In the panel: **D0** previous · **D2** next · **D1** refresh (long-press →
+In the panel: **D2** previous · **D0** next · **D1** refresh (long-press →
 idle/mascot). The onboard **NeoPixel** is the beacon — green / amber / red for
 the worst severity on the current screen, blue when the data is stale.
 
@@ -138,10 +138,13 @@ revocable read-only token you kill from the tokens page.
 | | |
 |---|---|
 | ✅ | Builds (`pio run -e tinytrace`) |
-| ✅ | On hardware (original single-app firmware): captive-portal provisioning, WiFi, SNTP |
+| ✅ | On hardware: the boot launcher — D2/D0 move, D1 selects — and demo mode |
+| ✅ | On hardware: Settings → Config Portal, multi-network/tenant provisioning, WiFi, SNTP |
 | ✅ | On hardware: TLS + platform-token auth against a live Grail tenant |
 | ✅ | On hardware: live active-problems / golden-signals / last-logs screens |
-| ⬜ | Launcher, Trace Runner, multi-network/tenant Settings, and demo mode — compile-clean, **not yet flashed** |
+| ✅ | On hardware: Trace Runner |
+
+Everything above is verified on the current launcher firmware.
 
 ## Layout
 
