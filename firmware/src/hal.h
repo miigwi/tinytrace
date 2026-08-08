@@ -51,8 +51,15 @@ struct Battery {
 void batteryBegin();
 Battery batteryRead();
 
-// Beacon: the single onboard NeoPixel, the "should you look up" light. Off when
-// there is nothing to say — the panel is the detail.
+// Beacon: the single onboard NeoPixel, the severity light — green when all is
+// clear, amber for warn, red for error, blue when the data is stale.
+//
+// It deliberately stays lit on all-clear rather than going dark. Green is a
+// positive "device is alive and things are fine" signal, and it is cheap:
+// measured against the panel's idle draw it is ~3 mA of ~65 mA, about 4.5%, or
+// roughly 45 minutes of an 18-hour battery life. Not worth trading the signal
+// for. (This comment previously claimed the beacon went off when there was
+// nothing to say, which the code never did.)
 void beaconBegin();
 void beacon(Sev sev, bool stale);
 
