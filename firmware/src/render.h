@@ -14,5 +14,11 @@ void renderStatus(Adafruit_ST7789 &tft, const char *line1, const char *line2);
 void renderScreen(Adafruit_ST7789 &tft, const Screen &s, int index, int total);
 // renderScrollTick animates the marquee for long list rows; call every loop.
 void renderScrollTick(Adafruit_ST7789 &tft, const Screen &s);
+// Battery indicator, shown on every panel screen (header) and on the idle face.
+// The app polls the gauge and pushes the reading in; renderBatteryTick repaints
+// only when the displayed value actually changed, so a percentage tick never
+// forces a full redraw (which would restart the marquee).
+void renderSetBattery(bool present, int percent, bool charging);
+void renderBatteryTick(Adafruit_ST7789 &tft, const Screen &s);
 // drawMascot draws the robot face, used by the idle and all-clear states.
 void drawMascot(Adafruit_ST7789 &tft, int cx, int cy, Mascot m, uint16_t color);

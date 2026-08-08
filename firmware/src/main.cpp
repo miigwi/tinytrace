@@ -164,6 +164,7 @@ void setup() {
   displayPowerOn();  // TFT/backlight power rail — must precede tft.init()
   beaconBegin();
   inputBegin();
+  batteryBegin();  // fuel gauge shares the rail displayPowerOn() just enabled
   renderInit(tft);  // init(135,240) + rotation + clear
 
   static const char *items[] = {"TINYTRACE", "TRACE RUNNER", "SETTINGS"};

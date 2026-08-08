@@ -80,8 +80,66 @@ void renderStatus(Adafruit_ST7789 &tft, const char *line1, const char *line2) {
   if (line2 && *line2) putC(tft, cx, tft.height() / 2 + 30, line2, 1, C_DIM);
 }
 
-// drawHeader: severity dot, title, refresh time. Stale greys the whole bar and
-// prefixes the time — the panel never presents old numbers as current.
+// --- battery indicator ------------------------------------------------------
+// Pushed in by the app; the renderer owns only how it looks and when it needs
+// repainting.
+static bool g_battPresent = false;
+static int g_battPct = 0;
+static bool g_battChg = false;
+static bool g_battDirty = false;
+
+void renderSetBattery(bool present, int percent, bool charging) {
+  if (present == g_battPresent && percent == g_battPct && charging == g_battChg) return;
+  g_battPresent = present;
+  g_battPct = percent;
+  g_battChg = charging;
+  g_battDirty = true;
+}
+
+// battW is the width the indicator needs — zero when there is nothing to show,
+// so a board with no cell attached costs the title no space at all.
+static int battW() {
+  if (!g_battPresent) return 0;
+  return 16 + 3 + textW(String(g_battPct) + "%", 1);
+}
+
+// A 5x9 lightning bolt — the charging marker, drawn over the cell.
+static void drawBolt(Adafruit_ST7789 &t, int cx, int cy, uint16_t c) {
+  t.fillTriangle(cx + 2, cy - 4, cx - 2, cy + 1, cx + 1, cy + 1, c);
+  t.fillTriangle(cx - 2, cy + 4, cx + 2, cy - 1, cx - 1, cy - 1, c);
+}
+
+// drawBattery paints [cell][NN%] right-aligned at xr, vertically centred on
+// midY. Colour carries the state: blue while charging, then amber/red as the
+// charge falls, so the level reads without parsing the number.
+static void drawBattery(Adafruit_ST7789 &t, int xr, int midY) {
+  if (!g_battPresent) return;
+
+  String txt = String(g_battPct) + "%";
+  const int tw = textW(txt, 1);
+  const int x0 = xr - (16 + 3 + tw);  // left edge of the cell glyph
+
+  uint16_t c = C_OK;
+  if (g_battChg) c = C_INFO;
+  else if (g_battPct <= 15) c = C_ERROR;
+  else if (g_battPct <= 30) c = C_WARN;
+
+  t.drawRect(x0, midY - 4, 14, 9, c);        // cell body
+  t.fillRect(x0 + 14, midY - 2, 2, 5, c);    // positive terminal nub
+  int fill = (12 * g_battPct) / 100;         // inner bar, 12px of usable width
+  if (fill > 0) t.fillRect(x0 + 1, midY - 3, fill, 7, c);
+  if (g_battChg) drawBolt(t, x0 + 7, midY, C_FG);
+
+  putR(t, xr, midY, txt, 1, c);
+}
+
+// drawHeader: severity dot, title, battery. Stale greys the whole bar and marks
+// the title — the panel never presents old numbers as current.
+//
+// The refresh clock used to sit top-right and carry the stale "!" prefix. It
+// was dropped to give the title back that width, so the marker moved onto the
+// title itself; the footer still names the reason, and the beacon still goes
+// blue. s.ts stays in the model, just unrendered.
 static void drawHeader(Adafruit_ST7789 &tft, const Screen &s) {
   const int w = tft.width();
   tft.fillRect(0, 0, w, HEADER_H, C_BG);
@@ -89,13 +147,29 @@ static void drawHeader(Adafruit_ST7789 &tft, const Screen &s) {
   uint16_t accent = s.stale ? C_DIM : sevColor(s.sev);
   tft.fillCircle(7, HEADER_H / 2, 3, accent);
 
-  String ts = s.stale ? ("!" + s.ts) : s.ts;
-  int tsW = textW(ts, 1);
-  String title = clipToW(s.title, 2, w - 15 - tsW - 8);
+  const int bw = battW();
+  if (bw) drawBattery(tft, w - 4, HEADER_H / 2);
+
+  String title = clipToW(s.stale ? ("!" + s.title) : s.title, 2,
+                         w - 15 - 4 - (bw ? bw + 8 : 0));
   putL(tft, 15, HEADER_H / 2, title, 2, s.stale ? C_DIM : C_FG);
-  putR(tft, w - 4, HEADER_H / 2, ts, 1, C_DIM);
 
   tft.drawFastHLine(0, HEADER_H - 1, w, C_RULE);
+}
+
+// renderBatteryTick repaints the indicator in place when the reading changed.
+// The header bar is cheap to redraw whole; the idle face has no header, so the
+// glyph gets its own corner cleared.
+void renderBatteryTick(Adafruit_ST7789 &tft, const Screen &s) {
+  if (!g_battDirty) return;
+  g_battDirty = false;
+  if (s.id == "idle") {
+    const int bw = battW();
+    tft.fillRect(tft.width() - 8 - bw, 2, bw + 8, 12, C_BG);
+    if (bw) drawBattery(tft, tft.width() - 4, 8);
+  } else {
+    drawHeader(tft, s);
+  }
 }
 
 // mAvail returns the pixel width the main column gets, after L and R.
@@ -264,6 +338,7 @@ static void renderIdle(Adafruit_ST7789 &tft, const Screen &s) {
   String env = s.env;
   env.replace("https://", "");
   putC(tft, cx, tft.height() / 2 + 30, env, 1, C_DIM);
+  drawBattery(tft, tft.width() - 4, 8);  // idle has no header — own corner
 }
 
 void renderScreen(Adafruit_ST7789 &tft, const Screen &s, int index, int total) {

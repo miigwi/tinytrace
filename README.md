@@ -10,7 +10,7 @@ into any USB charger and it just works.
 
 ```
    ┌────────────────────────────┐
-   │● checkout          22:14   │   header dot + service, local time
+   │● checkout           ▮ 87%  │   header dot + service, battery
    │LAT   128 ms  ▁▂▃▅▇▆  ▲     │
    │TPS   2.4k    ▃▃▄▅▄▅  ►     │   golden signals for the top-worst
    │ERR   3.1 %   ▁▁▂▁▃█  ▲     │   service: LAT p99 · TPS · ERR · 4xx
@@ -37,6 +37,23 @@ Built on-device from DQL, refreshed every 60 s into RAM (buttons switch instantl
 In the panel: **D2** previous · **D0** next · **D1** refresh (long-press →
 idle/mascot). The onboard **NeoPixel** is the beacon — green / amber / red for
 the worst severity on the current screen, blue when the data is stale.
+
+**Battery.** Every screen carries a battery cell and percentage in the header
+(top-right of the mascot on the idle screen), read from the onboard **MAX17048
+fuel gauge** over I2C — this board has no analog VBAT divider, so the gauge is
+the only source. It fills and colours with the charge: teal, amber under 30 %,
+red under 15 %, and **blue with a bolt while charging**. With no cell attached
+the indicator disappears entirely rather than showing a fake reading, and the
+service name reclaims the space.
+
+Three limits, all hardware. The charger's CHG LED isn't wired to a GPIO, so
+charging is inferred from the gauge's charge-rate register — a *full* battery on
+USB settles to ~0 %/h and reads as "not charging", which is true but isn't the
+same as unplugged. With no cell attached the charger drives the BAT pin to
+~4.2 V, so "absent" and "full" are genuinely indistinguishable in software. And
+that rate register is heavily filtered and reset when the gauge is initialised,
+so **the bolt takes a few minutes after boot to appear** — plug in and it will
+look uncharging for a while before catching up.
 
 | Screen | Query |
 |---|---|
@@ -122,8 +139,9 @@ hold BOOT → tap RESET → release BOOT, then upload → tap RESET to run the a
 > initialises cleanly. (Hard-won — don't switch it back.)
 
 Tunables live as `build_flags` in [platformio.ini](firmware/platformio.ini):
-`TT_ROTATION` (screen orientation), `TT_TZ` (POSIX timezone for the on-panel
-clock), `TT_LONGPRESS_MS`, and `TT_SLEEP_MS`.
+`TT_ROTATION` (screen orientation), `TT_TZ` (POSIX timezone for the device
+clock — no longer drawn on the panel, but it still sets system local time),
+`TT_LONGPRESS_MS`, and `TT_SLEEP_MS`.
 
 ## Security
 
@@ -143,6 +161,7 @@ revocable read-only token you kill from the tokens page.
 | ✅ | On hardware: TLS + platform-token auth against a live Grail tenant |
 | ✅ | On hardware: live active-problems / golden-signals / last-logs screens |
 | ✅ | On hardware: Trace Runner |
+| ✅ | On hardware: battery indicator (MAX17048) — level, and charging cross-checked against the CHG LED |
 
 Everything above is verified on the current launcher firmware.
 
