@@ -41,6 +41,17 @@ static bool asleep = false;
 
 static const uint32_t REFRESH_MS = 60000;  // tenant query cadence
 
+static uint32_t lastBatt = 0;
+static const uint32_t BATT_MS = 10000;  // fuel-gauge cadence; charge moves slowly
+
+// battPoll reads the gauge and hands the reading to the renderer, which repaints
+// the indicator only if the displayed value changed.
+static void battPoll() {
+  Battery b = batteryRead();
+  renderSetBattery(b.present, (int)lroundf(b.percent), b.charging);
+  lastBatt = millis();
+}
+
 // The beacon tracks the worst severity on the CURRENT screen, so it changes as
 // you page — green/amber/red, blue when stale.
 static void updateBeacon() { beacon(screens[current].sev, screens[current].stale); }
@@ -126,6 +137,7 @@ void tinytraceRun(Adafruit_ST7789 &tft) {
 
   current = 0;
   lastInput = millis();
+  battPoll();  // seed the indicator so the first paint already carries it
   show();
 
   for (;;) {
@@ -161,7 +173,12 @@ void tinytraceRun(Adafruit_ST7789 &tft) {
       backlight(false);
     }
 
-    if (!asleep) renderScrollTick(*gTft, screens[current]);  // marquee long titles
+    if (now - lastBatt > BATT_MS) battPoll();  // keep polling while asleep too
+
+    if (!asleep) {
+      renderBatteryTick(*gTft, screens[current]);          // repaints only on change
+      renderScrollTick(*gTft, screens[current]);           // marquee long titles
+    }
 
     delay(20);
   }

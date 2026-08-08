@@ -58,7 +58,7 @@ struct Row {
 struct Screen {
   String id;
   String title;
-  String ts;   // "15:06", wall-clock of the last good refresh
+  String ts;   // "15:06", wall-clock of the last good refresh (no longer drawn)
   String env;  // tenant, so a misconfigured device is obvious
   String err;  // short reason when stale
   Kind kind = KIND_LIST;
