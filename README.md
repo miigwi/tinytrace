@@ -27,13 +27,15 @@ everything: **D2** up · **D0** down · **D1** select.
 |---|---|
 | **TINYTRACE** | the Dynatrace desk panel (live if configured, else demo) |
 | **TRACE RUNNER** | a one-button noir endless runner — offline, just for fun |
-| **SETTINGS** | → Config Portal · Reset Settings · Back |
+| **SETTINGS** | → Refresh Rate · Config Portal · Reset Settings · Back |
 
 Reset returns you to the launcher; that's how you leave an app.
 
 ## Tinytrace panel
 
-Built on-device from DQL, refreshed every 60 s into RAM (buttons switch instantly).
+Built on-device from DQL, refreshed every **5 minutes** into RAM (buttons switch
+instantly). The cadence is set on the device under **SETTINGS → Refresh Rate** —
+no portal, no laptop — because it is what battery life mostly turns on.
 In the panel: **D2** previous · **D0** next · **D1** refresh (long-press →
 idle/mascot). The onboard **NeoPixel** is the beacon — green / amber / red for
 the worst severity on the current screen, blue when the data is stale.
@@ -77,6 +79,40 @@ graveyard shift and you keep the SLO alive. **D1 = jump, held = higher.** Clear
 gaps, steam vents and patrol drones; grab data shards and origami unicorns; a
 hit costs SLO (the NeoPixel is the SLO beacon) and 0 % ends the shift with a
 rank. Best score persists to NVS. Offline — no WiFi or tenant needed.
+
+## Battery life
+
+Measured on hardware — an ESP32-S3 Reverse TFT Feather on a 1200 mAh LiPo,
+associated to WiFi, live against a Grail tenant, panel blanked. Discharge was
+read from the onboard fuel gauge over multi-hour runs.
+
+| Refresh cadence | Draw | Runtime |
+|---|---|---|
+| every 1 min | ~74 mA | ~16 h |
+| **every 5 min** (default) | **~34 mA** | **~33 h** |
+| every 10 min | ~29 mA | ~41 h |
+| never (idle floor) | ~24 mA | ~50 h |
+
+**SETTINGS → Refresh Rate** offers 1 / 2 / 5 / 10 / 15 / 30 min and shows the
+estimate for each, so the trade is visible where you make it.
+
+Two things dominate, and both are now set for endurance rather than freshness:
+
+- **How often it queries.** A refresh is four DQL queries of two round trips
+  each and blocks for 10–16 s, mostly waiting on Grail rather than on TLS —
+  reusing the TLS session was measured and would save almost nothing.
+- **CPU clock.** `TT_CPU_MHZ` defaults to **80** (the floor that still runs
+  WiFi): ~24 mA idle against ~41 mA at 240. The lower clock does stretch each
+  query, which at a one-minute cadence cancelled the saving exactly — at five
+  minutes the idle term dominates and it wins clearly.
+
+> A caveat on measuring this yourself: a freshly charged cell sheds surface
+> charge for the better part of an hour and the gauge reads that as
+> consumption — it inflated our early figures by 3×. Start from ~85 %, not
+> 100 %, and discard the first 40 minutes.
+
+Going below the ~24 mA floor needs light sleep, which the Arduino framework
+compiles out (`CONFIG_PM_ENABLE` is unset); it would take an ESP-IDF build.
 
 ## Configuration (WiFi & Dynatrace)
 
@@ -141,7 +177,9 @@ hold BOOT → tap RESET → release BOOT, then upload → tap RESET to run the a
 Tunables live as `build_flags` in [platformio.ini](firmware/platformio.ini):
 `TT_ROTATION` (screen orientation), `TT_TZ` (POSIX timezone for the device
 clock — no longer drawn on the panel, but it still sets system local time),
-`TT_LONGPRESS_MS`, and `TT_SLEEP_MS`.
+`TT_LONGPRESS_MS`, `TT_SLEEP_MS`, `TT_CPU_MHZ` (80 by default — see
+[Battery life](#battery-life)), and `TT_REFRESH_MIN_DEFAULT` (the cadence used
+until one is chosen on-device).
 
 ## Security
 
@@ -162,6 +200,9 @@ revocable read-only token you kill from the tokens page.
 | ✅ | On hardware: live active-problems / golden-signals / last-logs screens |
 | ✅ | On hardware: Trace Runner |
 | ✅ | On hardware: battery indicator (MAX17048) — level, and charging cross-checked against the CHG LED |
+| ✅ | On hardware: battery-life figures above, from multi-hour fuel-gauge runs |
+| ✅ | On hardware: SETTINGS → Refresh Rate — picked, persisted to NVS, read back after restart |
+| ✅ | On hardware: menu scrolling for lists longer than the panel |
 
 Everything above is verified on the current launcher firmware.
 

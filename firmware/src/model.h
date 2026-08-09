@@ -21,6 +21,24 @@
 #ifndef TT_SLEEP_MS
 #define TT_SLEEP_MS 300000
 #endif
+// CPU clock. 80 MHz is the lowest that still runs WiFi, and measured idle draw
+// is ~26 mA against ~41 mA at 240 — about 15 mA, which on this panel is most of
+// the budget once it is not querying.
+//
+// It does cost query time: a refresh takes 14.6 s at 80 MHz against 10.2 s at
+// 240. Under the old 60 s cadence that cancelled the idle saving exactly (both
+// landed near 66 mA, which is why an earlier measurement wrongly concluded the
+// clock did not matter). At the 5-minute default the query window is only ~3%
+// of the time, so the idle term dominates and the low clock wins.
+#ifndef TT_CPU_MHZ
+#define TT_CPU_MHZ 80
+#endif
+// Default refresh cadence in minutes, used when the device has no stored
+// preference. Measured: querying every 60 s costs 40.5 mA of a 66.9 mA total —
+// 61% of the whole budget — so the default is deliberately not one minute.
+#ifndef TT_REFRESH_MIN_DEFAULT
+#define TT_REFRESH_MIN_DEFAULT 5
+#endif
 #ifndef TT_TZ
 #define TT_TZ "CET-1CEST,M3.5.0,M10.5.0/3"  // Central European; POSIX TZ string
 #endif

@@ -54,9 +54,20 @@ static void drawList(const char *title, const char *sub, const char *const *item
     tft.print(sub);
   }
 
-  const int top = 42, rowH = 22;
-  for (int i = 0; i < n; i++) {
-    int y = top + i * rowH;
+  // 135 px tall leaves room for the title, three rows, the blurb and the hint —
+  // no more. Anything longer scrolls a window that follows the selection, rather
+  // than drawing rows off the bottom edge where they simply vanish.
+  const int top = 42, rowH = 22, maxVis = 3;
+  int first = 0;
+  if (n > maxVis) {
+    if (sel >= maxVis) first = sel - maxVis + 1;
+    if (first > n - maxVis) first = n - maxVis;
+  }
+  const int vis = n < maxVis ? n : maxVis;
+
+  for (int k = 0; k < vis; k++) {
+    const int i = first + k;
+    int y = top + k * rowH;
     bool on = i == sel;
     if (on) {
       tft.fillRect(6, y - 2, w - 12, rowH - 3, CL_PANEL);
@@ -71,9 +82,20 @@ static void drawList(const char *title, const char *sub, const char *const *item
   }
 
   tft.setTextSize(1);
+  // Say where we are in a scrolled list, and mark that there is more above or
+  // below — otherwise a window that moves under you is just confusing.
+  if (n > maxVis) {
+    char pos[12];
+    snprintf(pos, sizeof(pos), "%c %d/%d %c", first > 0 ? '^' : ' ', sel + 1, n,
+             first + vis < n ? 'v' : ' ');
+    tft.setTextColor(CL_DIM);
+    tft.setCursor(w - (int)strlen(pos) * 6 - 4, 10);
+    tft.print(pos);
+  }
+
   if (blurbs && blurbs[sel]) {
     tft.setTextColor(CL_TEAL);
-    tft.setCursor(w / 2 - (int)strlen(blurbs[sel]) * 3, top + n * rowH + 2);
+    tft.setCursor(w / 2 - (int)strlen(blurbs[sel]) * 3, top + vis * rowH + 2);
     tft.print(blurbs[sel]);
   }
   tft.setTextColor(CL_DIM);
@@ -131,19 +153,65 @@ static bool confirm(const char *l1, const char *l2) {
   }
 }
 
+// The refresh cadence the picker offers, in minutes. Querying is the dominant
+// battery cost (measured: 40.5 mA of 66.9 mA at one minute), so the choice runs
+// from "as fresh as possible" to "lasts for days".
+static const int REFRESH_CHOICES[] = {1, 2, 5, 10, 15, 30};
+static const int N_REFRESH_CHOICES = 6;
+
+// Pick the refresh interval on-device. This is the one setting worth changing
+// without a laptop, so it lives here rather than in the captive portal.
+static void refreshFlow() {
+  Settings st;
+  settingsLoad(st);
+
+  static char labels[N_REFRESH_CHOICES][12];
+  static char blurbs[N_REFRESH_CHOICES][26];
+  const char *items[N_REFRESH_CHOICES];
+  const char *notes[N_REFRESH_CHOICES];
+  int sel = 0;
+  for (int i = 0; i < N_REFRESH_CHOICES; i++) {
+    int m = REFRESH_CHOICES[i];
+    snprintf(labels[i], sizeof(labels[i]), "%d min%s", m, st.refreshMin == m ? " *" : "");
+    // Rough battery hours against a 1200 mAh cell, from two settled hardware
+    // measurements: ~24 mA with querying off, and ~34 mA at a five-minute
+    // cadence. That fixes the per-query term at ~50/m mA, which also reproduces
+    // the ~18 h originally measured at a one-minute cadence.
+    //
+    // Deliberately not derived from the raw phase comparison: a freshly charged
+    // cell sheds surface charge for the best part of an hour, and the gauge
+    // reads that as consumption — which inflated the early figures badly.
+    snprintf(blurbs[i], sizeof(blurbs[i]), "~%d h on a 1200mAh cell",
+             (int)(1200.0 / (24.0 + 50.0 / m)));
+    items[i] = labels[i];
+    notes[i] = blurbs[i];
+    if (st.refreshMin == m) sel = i;
+  }
+
+  int c = runMenu("REFRESH", "* = current", items, notes, N_REFRESH_CHOICES);
+  waitRelease();
+  st.refreshMin = REFRESH_CHOICES[c];
+  settingsSave(st);
+  renderStatus(tft, (String(st.refreshMin) + " MIN").c_str(), "saved - restarting...");
+  delay(1000);
+  ESP.restart();  // the panel reads the cadence once at start
+}
+
 // The Settings submenu. Returns when the user picks Back.
 static void settingsFlow() {
-  static const char *items[] = {"Config Portal", "Reset Settings", "Back"};
-  static const char *blurbs[] = {"WiFi + Dynatrace setup", "erase all networks/tenants",
-                                 "return to launcher"};
+  static const char *items[] = {"Refresh Rate", "Config Portal", "Reset Settings", "Back"};
+  static const char *blurbs[] = {"how often to query", "WiFi + Dynatrace setup",
+                                 "erase all networks/tenants", "return to launcher"};
   for (;;) {
-    int c = runMenu("SETTINGS", "", items, blurbs, 3);
+    int c = runMenu("SETTINGS", "", items, blurbs, 4);
     waitRelease();
-    if (c == 0) {  // captive portal — blocks and reboots on Apply
+    if (c == 0) {  // on-device refresh cadence — no portal, no laptop
+      refreshFlow();
+    } else if (c == 1) {  // captive portal — blocks and reboots on Apply
       beacon(SEV_OK, true);  // blue = setup mode
       renderStatus(tft, "CONFIG PORTAL", "join wifi 'tinytrace-setup'");
       runPortal();
-    } else if (c == 1) {  // reset to non-connected state
+    } else if (c == 2) {  // reset to non-connected state
       if (confirm("RESET?", "erase all networks & tenants")) {
         settingsReset();
         renderStatus(tft, "RESET DONE", "restarting...");
@@ -157,9 +225,17 @@ static void settingsFlow() {
 }
 
 void setup() {
+  // Drop the CPU before anything else (including Serial, whose divisors are
+  // recomputed on the change). The panel is idle almost all of the time and
+  // spends it polling buttons at 240 MHz — measured, that idle loop is the
+  // largest single term in a ~65 mA blanked draw. 80 MHz is the floor that
+  // still supports WiFi. APB stays at 80 MHz on the S3, so SPI to the ST7789
+  // is unaffected; the visible cost is slower TLS handshakes in refreshAll().
+  setCpuFrequencyMhz(TT_CPU_MHZ);
+
   Serial.begin(115200);
   delay(300);
-  Serial.println("\n[launcher] boot");
+  Serial.printf("\n[launcher] boot @ %u MHz\n", (unsigned)getCpuFrequencyMhz());
 
   displayPowerOn();  // TFT/backlight power rail — must precede tft.init()
   beaconBegin();
