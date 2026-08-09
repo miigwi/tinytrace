@@ -54,8 +54,10 @@ USB settles to ~0 %/h and reads as "not charging", which is true but isn't the
 same as unplugged. With no cell attached the charger drives the BAT pin to
 ~4.2 V, so "absent" and "full" are genuinely indistinguishable in software. And
 that rate register is heavily filtered and reset when the gauge is initialised,
-so **the bolt takes a few minutes after boot to appear** — plug in and it will
-look uncharging for a while before catching up.
+so **the bolt takes about ten minutes after boot to appear** — measured from a
+cold boot on a live charger it climbed −4.37 → −1.04 → −0.21 → +3.12 %/h before
+registering. The CHG LED cannot short-circuit this: it hangs off the charger's
+status output, not off any GPIO the ESP32 can read.
 
 | Screen | Query |
 |---|---|
@@ -105,6 +107,17 @@ Two things dominate, and both are now set for endurance rather than freshness:
   WiFi): ~24 mA idle against ~41 mA at 240. The lower clock does stretch each
   query, which at a one-minute cadence cancelled the saving exactly — at five
   minutes the idle term dominates and it wins clearly.
+
+**Light sleep.** While the panel is blanked there is nothing to draw and nothing
+to poll but the clock, so it light-sleeps to the next scheduled work instead of
+spinning — waking instantly on any button. The figures above were measured
+*before* this landed, so they are a floor rather than a promise; the idle term
+should fall well below 24 mA, but that has not been measured yet.
+
+The association does not survive a nap of minutes — without `CONFIG_PM_ENABLE`
+nothing lines the sleep up with the AP's DTIM beacons — so the panel rejoins
+before each query. That costs a second or two per refresh, against ~24 mA it
+would otherwise burn continuously.
 
 > A caveat on measuring this yourself: a freshly charged cell sheds surface
 > charge for the better part of an hour and the gauge reads that as

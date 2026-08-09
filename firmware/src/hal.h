@@ -26,6 +26,20 @@ Action inputPoll();
 // the raw held state (e.g. hold-to-jump-higher), not tap-on-release actions.
 bool btnDown(uint8_t d);
 
+// idleSleep parks the CPU in light sleep for at most maxMs, returning early if
+// any button is pressed. RAM, the WiFi association and the display all survive,
+// so the caller simply continues its loop.
+//
+// This is where the battery goes: measured, a blanked panel spinning its 20 ms
+// poll loop draws ~24 mA, and at a five-minute cadence it spends ~95% of its
+// life doing exactly that. Automatic (tickless) light sleep is not available —
+// the Arduino framework is built with CONFIG_PM_ENABLE unset — so it is entered
+// explicitly here.
+//
+// Do not call with a button already down: wakeup is level-triggered, so it
+// would return immediately and spin.
+void idleSleep(uint32_t maxMs);
+
 // Battery: the onboard MAX17048 fuel gauge (I2C 0x36). This board has no analog
 // VBAT divider, so the gauge is the only source of charge state.
 //

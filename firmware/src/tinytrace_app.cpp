@@ -20,6 +20,7 @@
 #include "app.h"
 #include "config.h"
 #include "demo.h"
+#include "dt.h"
 #include "dt_screens.h"
 #include "hal.h"
 #include "model.h"
@@ -96,7 +97,23 @@ static void markStale(Screen &s) {
 // round trips each, dominated by Grail computing them rather than by TLS. Input
 // is not polled during that window, so a press can be missed; the panel is
 // glanceable rather than interactive, and the cadence is deliberately minutes.
+// Set whenever the panel has light-slept since the last query. The association
+// does not survive a nap of minutes: without CONFIG_PM_ENABLE nothing lines the
+// sleep up with the AP's DTIM beacons, so they are all missed and the AP drops
+// us. Rejoining costs a second or two per refresh — cheap against the ~24 mA
+// the idle loop would otherwise burn the whole time.
+static bool sleptSinceRefresh = false;
+
 static void refreshAll() {
+  if (sleptSinceRefresh) {
+    sleptSinceRefresh = false;
+    Serial.printf("[tt] waking: wifi=%d rssi=%d\n", (int)WiFi.status(), (int)WiFi.RSSI());
+    dqlDropConnection();  // the socket is stale even when the association is not
+    if (WiFi.status() != WL_CONNECTED) {
+      WiFi.disconnect();
+      Serial.println(wifiConnect(gCfg) ? "[tt] rejoined" : "[tt] rejoin failed");
+    }
+  }
   if (WiFi.status() != WL_CONNECTED) WiFi.reconnect();
 
   Screen p, g, l;
@@ -188,8 +205,31 @@ void tinytraceRun(Adafruit_ST7789 &tft) {
     if (!asleep) {
       renderBatteryTick(*gTft, screens[current]);          // repaints only on change
       renderScrollTick(*gTft, screens[current]);           // marquee long titles
+      delay(20);
+      continue;
     }
 
-    delay(20);
+    // Blanked: nothing to draw, nothing to animate, and the next work is on a
+    // known clock — so sleep to it instead of spinning. This is where the
+    // battery is won; a blanked panel is ~95% of the device's life at a
+    // five-minute cadence.
+    //
+    // Deliberately not while awake: the marquee needs 220 ms ticks, and
+    // inputPoll only resolves a press on release, which needs polling through
+    // the press. Waking on the button and then polling normally keeps buttons
+    // feeling immediate.
+    if (btnDown(0) || btnDown(1) || btnDown(2)) {
+      delay(20);  // level-triggered wakeup would return instantly on a held key
+      continue;
+    }
+    int32_t dRefresh = gLive ? (int32_t)(lastRefresh + REFRESH_MS - now) : 60000;
+    int32_t dBatt = (int32_t)(lastBatt + BATT_MS - now);
+    int32_t d = dRefresh < dBatt ? dRefresh : dBatt;
+    if (d > 50) {
+      idleSleep((uint32_t)d);
+      sleptSinceRefresh = true;
+    } else {
+      delay(20);
+    }
   }
 }

@@ -28,6 +28,8 @@ static WiFiClientSecure &secureClient() {
   return client;
 }
 
+void dqlDropConnection() { client.stop(); }
+
 static String urlEncode(const String &s) {
   String o;
   char buf[4];
