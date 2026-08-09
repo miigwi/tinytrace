@@ -1,8 +1,9 @@
 // Tinytrace — the Dynatrace desk panel, as a launcher-dispatched app.
 //
 // Resolves the active connection from Settings (selected WiFi + tenant). If the
-// WiFi associates and a tenant is configured, it runs live: builds the screens
-// from DQL every 60 s. Otherwise it boots non-connected — a "DEMO MODE" set of
+// WiFi associates and a tenant is configured, it runs live: rebuilds the screens
+// from DQL on the cadence set in SETTINGS -> Refresh Rate (default 5 min).
+// Otherwise it boots non-connected — a "DEMO MODE" set of
 // canned screens — so the panel is useful offline. Provisioning is never
 // entered from here; that lives behind the launcher's Settings entry.
 //
@@ -39,7 +40,11 @@ static uint32_t lastInput = 0;
 static uint32_t lastRefresh = 0;
 static bool asleep = false;
 
-static const uint32_t REFRESH_MS = 60000;  // tenant query cadence
+// Tenant query cadence, read from Settings at start (SETTINGS -> Refresh Rate).
+// Not a constant any more because it is what battery life mostly turns on:
+// measured on hardware, ~18 h at a one-minute cadence against ~33 h at five
+// minutes, on a 1200 mAh cell.
+static uint32_t REFRESH_MS = (uint32_t)TT_REFRESH_MIN_DEFAULT * 60000UL;
 
 static uint32_t lastBatt = 0;
 static const uint32_t BATT_MS = 10000;  // fuel-gauge cadence; charge moves slowly
@@ -85,9 +90,12 @@ static void markStale(Screen &s) {
 
 // refreshAll re-queries every screen into RAM and sets the beacon to the worst
 // severity seen (blue if anything is stale). A failed query keeps the last good
-// screen and dims it. This blocks for the few seconds of TLS/DQL — the buttons
-// resume responding between refreshes, which is why the cadence is 60 s and the
-// panel is glanceable rather than interactive.
+// screen and dims it.
+//
+// It blocks for the whole exchange — measured at 10-16 s, four queries of two
+// round trips each, dominated by Grail computing them rather than by TLS. Input
+// is not polled during that window, so a press can be missed; the panel is
+// glanceable rather than interactive, and the cadence is deliberately minutes.
 static void refreshAll() {
   if (WiFi.status() != WL_CONNECTED) WiFi.reconnect();
 
@@ -110,6 +118,8 @@ void tinytraceRun(Adafruit_ST7789 &tft) {
   Settings st;
   settingsLoad(st);
   Config act = settingsActive(st);
+  if (st.refreshMin > 0) REFRESH_MS = (uint32_t)st.refreshMin * 60000UL;
+  Serial.printf("[tt] refresh every %d min\n", (int)(REFRESH_MS / 60000UL));
 
   bool wifiOk = false;
   if (act.ssid.length()) {

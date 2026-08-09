@@ -14,6 +14,8 @@
 
 #include <Arduino.h>
 
+#include "model.h"
+
 // The active connection resolved from the current selection. Empty ssid means
 // "no WiFi selected" → the device boots non-connected (demo mode); empty
 // tenant/token means "no tenant" → demo even if WiFi associates.
@@ -47,6 +49,11 @@ struct Settings {
   TenantConn tenant[MAX_TENANTS];
   int ntenant = 0;
   int tenantSel = -1;  // index into tenant[], or -1 for none
+
+  // How often the panel re-queries the tenant, in minutes. Set from the on-device
+  // Settings menu (no portal needed) because it is the one setting worth changing
+  // in the field: it is the dominant term in battery life.
+  int refreshMin = TT_REFRESH_MIN_DEFAULT;
 
   bool wifiReady() const { return wifiSel >= 0 && wifiSel < nwifi; }
   bool tenantReady() const { return tenantSel >= 0 && tenantSel < ntenant; }

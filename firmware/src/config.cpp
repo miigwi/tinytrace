@@ -30,6 +30,10 @@ static void fromJson(const String &blob, Settings &out) {
   out.tenantSel = doc["ts"] | -1;
   if (out.wifiSel >= out.nwifi) out.wifiSel = out.nwifi ? 0 : -1;
   if (out.tenantSel >= out.ntenant) out.tenantSel = out.ntenant ? 0 : -1;
+  // Absent on stores written before the setting existed — fall back to the
+  // build default rather than to zero, which would query in a tight loop.
+  out.refreshMin = doc["rm"] | TT_REFRESH_MIN_DEFAULT;
+  if (out.refreshMin < 1) out.refreshMin = TT_REFRESH_MIN_DEFAULT;
 }
 
 static String toJson(const Settings &s) {
@@ -48,6 +52,7 @@ static String toJson(const Settings &s) {
   }
   doc["ws"] = s.wifiSel;
   doc["ts"] = s.tenantSel;
+  doc["rm"] = s.refreshMin;
   String out;
   serializeJson(doc, out);
   return out;
