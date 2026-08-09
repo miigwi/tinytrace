@@ -1,9 +1,12 @@
 # Tinytrace enclosure — v35
 
 A magnetic-mount case for the **Adafruit ESP32-S3 Reverse TFT Feather**, plus a
-pack of snap-on magnetic hats. Authored as a **Bambu Studio** project
-([`Tinytrace_v35_print_plate.3mf`](Tinytrace_v35_print_plate.3mf)) — 8 parts
-laid out across 6 print plates, ready to slice.
+pack of snap-on magnetic hats. Authored as **Bambu Studio** projects:
+
+| File | What it is |
+|---|---|
+| [`Tinytrace_print_plate.3mf`](Tinytrace_print_plate.3mf) | the printable project — 8 parts across 6 plates, ready to slice |
+| [`Tinytrace_assembly_reference.3mf`](Tinytrace_assembly_reference.3mf) | the parts positioned as assembled, for reference rather than printing |
 
 ![overview](renders/overview.png)
 
