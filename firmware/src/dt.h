@@ -17,3 +17,8 @@
 // true on a SUCCEEDED query (even with zero records). doc must outlive the use
 // of the records it holds.
 bool dqlQuery(const Config &cfg, const String &dql, JsonDocument &doc);
+
+// dqlDropConnection tears down the shared TLS client so the next query starts a
+// fresh handshake. Needed after light sleep: the socket survives the nap as a
+// handle but not as a connection, and reusing it just fails.
+void dqlDropConnection();

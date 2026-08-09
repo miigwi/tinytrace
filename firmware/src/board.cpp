@@ -8,6 +8,8 @@
 #include <Adafruit_NeoPixel.h>
 #include <Arduino.h>
 #include <Wire.h>
+#include <driver/gpio.h>
+#include <esp_sleep.h>
 
 #include "hal.h"
 
@@ -100,18 +102,39 @@ bool btnDown(uint8_t d) {
   return pressed(pin);
 }
 
+void idleSleep(uint32_t maxMs) {
+  static bool armed = false;
+  if (!armed) {
+    // A level per pin, which is what makes the mixed polarity workable here:
+    // D0 idles high and reads low pressed, D1/D2 the other way round. Deep
+    // sleep's ext1 could not express that — it is all-high or all-low for every
+    // pin in the mask — which is one reason this is light sleep and not deep.
+    gpio_wakeup_enable((gpio_num_t)BTN_D0, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable((gpio_num_t)BTN_D1, GPIO_INTR_HIGH_LEVEL);
+    gpio_wakeup_enable((gpio_num_t)BTN_D2, GPIO_INTR_HIGH_LEVEL);
+    esp_sleep_enable_gpio_wakeup();
+    armed = true;
+  }
+  esp_sleep_enable_timer_wakeup((uint64_t)maxMs * 1000ULL);
+  esp_light_sleep_start();  // returns on the timer or on a button
+}
+
 // ------------------------------------------------------------------------- battery
 
 // Below this charge rate (%/hour) the cell is treated as not charging. The
 // gauge's rate register is noisy around zero, so a flat threshold beats testing
 // for > 0 — otherwise a resting battery flickers between states.
 //
-// Note the settling delay: Adafruit_MAX17048::begin() issues a reset(), which
-// clears the CRATE accumulator, and CRATE is a heavily filtered value. For the
-// first few minutes after boot it reads near zero even while the charger is
-// visibly running, so the panel shows a normal level and only switches to the
-// charging colour once the gauge has converged. Verified on hardware against
-// the board's CHG LED.
+// Note the settling delay, which is longer than it sounds: begin() issues a
+// reset() that clears the CRATE accumulator, and CRATE is heavily filtered.
+// Measured from a cold boot while the charger was visibly running, it climbed
+// -4.37 -> -3.12 -> -1.87 -> -1.04 -> -0.42 -> -0.21 -> +3.12 %/h, i.e. roughly
+// ten minutes before it crossed into "charging". The panel therefore shows a
+// normal level for a while after boot even on USB. Cross-checked against the
+// board's CHG LED and against a cell voltage rising 4.128 -> 4.142 V throughout.
+//
+// The LED itself cannot help here: it hangs off the charger's status output, not
+// off any GPIO the ESP32 can read.
 #ifndef TT_BATT_CHG_RATE
 #define TT_BATT_CHG_RATE 0.5f
 #endif
@@ -127,16 +150,34 @@ void batteryBegin() {
 
 Battery batteryRead() {
   Battery b;
+
+  // Recovery deliberately avoids Adafruit_MAX17048::begin(): it issues a
+  // reset(), which clears the charge-rate accumulator, and that costs the best
+  // part of ten minutes before "charging" can be detected again. Re-probing on
+  // every failed read would wipe that history repeatedly and the bolt would
+  // never appear at all.
+  //
+  // So a failed read just tries again next time, nudging the bus periodically,
+  // and only a gauge silent for a long stretch is genuinely re-probed. (This is
+  // defensive: measured across light-sleep cycles, reads never actually failed.)
+  static int fails = 0;
+  if (fails > 0 && fails % 6 == 0) Wire.begin();  // ~1 min of failures: nudge I2C
+  if (fails >= 30) {                              // ~5 min: assume it really went away
+    fails = 0;
+    gaugeOk = gauge.begin(&Wire);
+    if (!gaugeOk) return b;
+  }
   if (!gaugeOk) {
-    gaugeOk = gauge.begin(&Wire);  // rail may have come up late; retry cheaply
+    gaugeOk = gauge.begin(&Wire);
     if (!gaugeOk) return b;
   }
 
   float v = gauge.cellVoltage();
   if (isnan(v)) {  // the library reports NaN when the gauge stops answering
-    gaugeOk = false;
-    return b;
+    fails++;
+    return b;  // note: gaugeOk stays true — do not trigger a resetting re-probe
   }
+  fails = 0;
 
   b.volts = v;
   float p = gauge.cellPercent();

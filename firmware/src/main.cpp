@@ -104,10 +104,12 @@ static void drawList(const char *title, const char *sub, const char *const *item
   tft.print(hint);
 }
 
-// Run a menu to completion; returns the selected index (D1 confirms).
+// Run a menu to completion; returns the selected index (D1 confirms). start is
+// where the cursor opens — a picker showing a stored value must open on it, or
+// confirming without moving silently changes the setting.
 static int runMenu(const char *title, const char *sub, const char *const *items,
-                   const char *const *blurbs, int n) {
-  int sel = 0;
+                   const char *const *blurbs, int n, int start = 0) {
+  int sel = (start >= 0 && start < n) ? start : 0;
   drawList(title, sub, items, blurbs, n, sel);
   for (;;) {
     Action a = inputPoll();
@@ -188,7 +190,7 @@ static void refreshFlow() {
     if (st.refreshMin == m) sel = i;
   }
 
-  int c = runMenu("REFRESH", "* = current", items, notes, N_REFRESH_CHOICES);
+  int c = runMenu("REFRESH", "* = current", items, notes, N_REFRESH_CHOICES, sel);
   waitRelease();
   st.refreshMin = REFRESH_CHOICES[c];
   settingsSave(st);
