@@ -1,4 +1,4 @@
-# Tinytrace enclosure — v35
+# Tinytrace enclosure
 
 A magnetic-mount case for the **Adafruit ESP32-S3 Reverse TFT Feather**, plus a
 pack of snap-on magnetic hats. Authored as **Bambu Studio** projects:
