@@ -27,8 +27,15 @@ Action inputPoll();
 bool btnDown(uint8_t d);
 
 // idleSleep parks the CPU in light sleep for at most maxMs, returning early if
-// any button is pressed. RAM, the WiFi association and the display all survive,
-// so the caller simply continues its loop.
+// any button is pressed. RAM, program state and the display survive, so the
+// caller simply continues its loop.
+//
+// The WiFi association does NOT survive a nap of any length worth taking. There
+// is no CONFIG_PM_ENABLE in this build, so nothing lines the sleep up with the
+// AP's DTIM beacons; they are all missed and the AP drops the station. A caller
+// that needs the network after sleeping must re-establish it first — see
+// refreshAll(), which drops the stale TLS socket and rejoins before querying.
+// Skipping that step fails with a bare connection error, not a WiFi one.
 //
 // This is where the battery goes: measured, a blanked panel spinning its 20 ms
 // poll loop draws ~24 mA, and at a five-minute cadence it spends ~95% of its
