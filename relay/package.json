@@ -1,0 +1,13 @@
+{
+  "name": "tinytrace-relay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Telemetry relay for tinytrace devices: JSON + fleet key in, Dynatrace ingest out",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "serve": "node dev/serve.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  }
+}

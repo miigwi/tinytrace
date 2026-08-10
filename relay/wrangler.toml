@@ -1,0 +1,29 @@
+# tinytrace telemetry relay.
+#
+# Secrets are NOT here — `wrangler secret put` keeps them out of the repo, which
+# is the entire reason this Worker exists:
+#
+#   wrangler secret put FLEET_KEY   # baked into firmware; revocable, useless alone
+#   wrangler secret put DT_TOKEN    # Dynatrace ingest token; never leaves the edge
+#
+# DT_URL is not secret (it is a tenant hostname), but it is still a var rather
+# than a literal in the source so a fork points somewhere else without a patch.
+
+name = "tinytrace-relay"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# The Dynatrace tenant that receives ingest, no trailing slash.
+DT_URL = "https://abc12345.live.dynatrace.com"
+
+# Per-device rate limit. The device reports once per refresh, and the fastest
+# cadence the picker offers is one minute, so 10 per minute is roughly an order
+# of magnitude of headroom over a well-behaved device — enough to absorb a
+# reboot loop reporting on every boot, low enough that a leaked fleet key cannot
+# run up an ingest bill from one device ID.
+[[unsafe.bindings]]
+name = "RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1"
+simple = { limit = 10, period = 60 }

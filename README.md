@@ -240,4 +240,16 @@ firmware/
     hal.h / board.cpp buttons → actions, NeoPixel beacon, power rail
     model.h           Screen/Row model
     certs.h           pinned root-CA bundle
+
+relay/                telemetry relay (Cloudflare Worker) — not wired up yet
+  src/protocol.js     the device→relay wire protocol, and the privacy boundary
+  src/dynatrace.js    → Dynatrace metrics + log ingest
+  src/index.js        the Worker: fleet-key auth, validation, rate limit
 ```
+
+**Telemetry** is opt-in and **not implemented on the device**. The relay in
+[relay/](relay/) defines the protocol and runs today, but no firmware sends to
+it yet — see [#11](https://github.com/miigwi/tinytrace/issues/11). Nothing
+leaves the panel until you turn it on, and when it does it carries counts,
+durations and status codes only: never the tenant URL, the token, the SSID, or
+anything off the screen.
