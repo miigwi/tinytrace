@@ -21,6 +21,12 @@
 #ifndef TT_SLEEP_MS
 #define TT_SLEEP_MS 300000
 #endif
+// Build stamp, set from the git commit by version.py at build time. A trailing
+// "+" means the tree was dirty, so the image matches no commit. The fallback
+// applies when building without git (a source tarball, say).
+#ifndef TT_BUILD
+#define TT_BUILD "nogit"
+#endif
 // CPU clock. 80 MHz is the lowest that still runs WiFi, and measured idle draw
 // is ~26 mA against ~41 mA at 240 — about 15 mA, which on this panel is most of
 // the budget once it is not querying.

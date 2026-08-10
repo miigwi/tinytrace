@@ -213,7 +213,9 @@ static void settingsFlow() {
   static const char *blurbs[] = {"how often to query", "WiFi + Dynatrace setup",
                                  "erase all networks/tenants", "return to launcher"};
   for (;;) {
-    int c = runMenu("SETTINGS", "", items, blurbs, 4);
+    // The subtitle slot is otherwise unused, so the build stamp costs no menu
+    // row: the one place you look when asking "what is on this board?".
+    int c = runMenu("SETTINGS", "build " TT_BUILD, items, blurbs, 4);
     waitRelease();
     if (c == 0) {  // on-device refresh cadence — no portal, no laptop
       refreshFlow();
@@ -245,7 +247,7 @@ void setup() {
 
   Serial.begin(115200);
   delay(300);
-  Serial.printf("\n[launcher] boot @ %u MHz\n", (unsigned)getCpuFrequencyMhz());
+  Serial.printf("\n[launcher] boot %s @ %u MHz\n", TT_BUILD, (unsigned)getCpuFrequencyMhz());
 
   displayPowerOn();  // TFT/backlight power rail — must precede tft.init()
   beaconBegin();
