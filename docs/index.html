@@ -141,7 +141,7 @@ ERR   3.1 %   &#9601;&#9601;&#9602;&#9601;&#9603;&#9608;  &#9650;   <span class=
           token stored in NVS. Nothing baked into the firmware.</p></div>
       <div class="card"><div class="k">THREE BUTTONS</div><h3>No touch</h3>
         <p><kbd>D2</kbd> previous &middot; <kbd>D0</kbd> next &middot; <kbd>D1</kbd> refresh
-          (long-press &rarr; idle/mascot). Refreshed every 60&nbsp;s into RAM.</p></div>
+          (long-press &rarr; idle/mascot). Refreshed into RAM on the cadence you pick.</p></div>
     </div>
   </div>
 </section>
@@ -155,8 +155,9 @@ ERR   3.1 %   &#9601;&#9601;&#9602;&#9601;&#9603;&#9608;  &#9650;   <span class=
       <div class="card">
         <div class="k" style="color:var(--cyan)">THE PANEL</div>
         <h3>Tinytrace</h3>
-        <p>Four screens built on-device from DQL, refreshed every 60&nbsp;s (buttons switch instantly).
-          If there's no WiFi or tenant, it boots a <strong>demo mode</strong> instead of nagging you.</p>
+        <p>Four screens built on-device from DQL, refreshed on a cadence you set on the device
+          (default 5&nbsp;min; buttons switch instantly). If there's no WiFi or tenant, it boots a
+          <strong>demo mode</strong> instead of nagging you.</p>
         <table>
           <tr><th>Screen</th><th>What</th></tr>
           <tr><td class="cy">active problems</td><td><code>fetch dt.davis.problems</code> — active, deduped (24&nbsp;h)</td></tr>
@@ -182,6 +183,39 @@ ERR   3.1 %   &#9601;&#9601;&#9602;&#9601;&#9603;&#9608;  &#9650;   <span class=
           <a class="btn solid" style="display:inline-block" href="https://tracerunner.ghoerig.dev/">&#9658; Play Trace Runner in your browser</a>
         </p>
       </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="k">THE BEACON</div>
+      <h3>What the light means</h3>
+      <p>The onboard NeoPixel is the &ldquo;should I look up?&rdquo; light, so you can read the panel
+        from across the room without reading it at all. It shows the worst severity on
+        <strong>the screen you are currently viewing</strong> &mdash; so it changes as you page
+        through, rather than summarising the whole device.</p>
+      <table>
+        <tr><th>Colour</th><th>Meaning</th></tr>
+        <tr>
+          <td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#00781e;box-shadow:0 0 7px #00781e;margin-right:8px;vertical-align:middle"></span>green</td>
+          <td>All clear &mdash; nothing on this screen needs you.</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#c85a00;box-shadow:0 0 7px #c85a00;margin-right:8px;vertical-align:middle"></span>amber</td>
+          <td>Warning &mdash; something on this screen is degraded but not broken.</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#c80000;box-shadow:0 0 7px #c80000;margin-right:8px;vertical-align:middle"></span>red</td>
+          <td>Error &mdash; an active problem or a failing signal on this screen.</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#0a3ca0;box-shadow:0 0 7px #0a3ca0;margin-right:8px;vertical-align:middle"></span>blue</td>
+          <td>Stale &mdash; the numbers on screen are old, because the tenant or WiFi could not be
+            reached. Also shown while the config portal is open.</td>
+        </tr>
+      </table>
+      <p class="muted" style="margin-top:12px"><strong>Blue overrides everything.</strong> A green
+        light on stale data would be a lie &mdash; so when the panel cannot refresh, it says so
+        rather than showing you a reassuring colour based on numbers it no longer trusts. The panel
+        title also gains a <code>!</code> and the footer names the reason.</p>
     </div>
   </div>
 </section>

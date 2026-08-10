@@ -34,8 +34,8 @@
 #define TT_CPU_MHZ 80
 #endif
 // Default refresh cadence in minutes, used when the device has no stored
-// preference. Measured: querying every 60 s costs 40.5 mA of a 66.9 mA total —
-// 61% of the whole budget — so the default is deliberately not one minute.
+// preference. Measured on a 1200 mAh cell: ~16 h at a one-minute cadence
+// against ~65 h at five minutes, so the default is deliberately not one minute.
 #ifndef TT_REFRESH_MIN_DEFAULT
 #define TT_REFRESH_MIN_DEFAULT 5
 #endif

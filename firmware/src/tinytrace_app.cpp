@@ -97,6 +97,7 @@ static void markStale(Screen &s) {
 // round trips each, dominated by Grail computing them rather than by TLS. Input
 // is not polled during that window, so a press can be missed; the panel is
 // glanceable rather than interactive, and the cadence is deliberately minutes.
+
 // Set whenever the panel has light-slept since the last query. The association
 // does not survive a nap of minutes: without CONFIG_PM_ENABLE nothing lines the
 // sleep up with the AP's DTIM beacons, so they are all missed and the AP drops

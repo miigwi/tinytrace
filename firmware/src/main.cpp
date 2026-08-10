@@ -155,9 +155,9 @@ static bool confirm(const char *l1, const char *l2) {
   }
 }
 
-// The refresh cadence the picker offers, in minutes. Querying is the dominant
-// battery cost (measured: 40.5 mA of 66.9 mA at one minute), so the choice runs
-// from "as fresh as possible" to "lasts for days".
+// The refresh cadence the picker offers, in minutes. Querying is what battery
+// life mostly turns on, so the choice runs from "as fresh as possible" to
+// "lasts for days".
 static const int REFRESH_CHOICES[] = {1, 2, 5, 10, 15, 30};
 static const int N_REFRESH_CHOICES = 6;
 
@@ -167,31 +167,39 @@ static void refreshFlow() {
   Settings st;
   settingsLoad(st);
 
+  // One extra row for Back: without it the only way out of this screen is to
+  // pick something, which means an accidental visit changes the setting and
+  // reboots the panel.
+  static const int N_ROWS = N_REFRESH_CHOICES + 1;
   static char labels[N_REFRESH_CHOICES][12];
   static char blurbs[N_REFRESH_CHOICES][26];
-  const char *items[N_REFRESH_CHOICES];
-  const char *notes[N_REFRESH_CHOICES];
+  const char *items[N_ROWS];
+  const char *notes[N_ROWS];
   int sel = 0;
   for (int i = 0; i < N_REFRESH_CHOICES; i++) {
     int m = REFRESH_CHOICES[i];
     snprintf(labels[i], sizeof(labels[i]), "%d min%s", m, st.refreshMin == m ? " *" : "");
-    // Rough battery hours against a 1200 mAh cell, from two settled hardware
-    // measurements: ~24 mA with querying off, and ~34 mA at a five-minute
-    // cadence. That fixes the per-query term at ~50/m mA, which also reproduces
-    // the ~18 h originally measured at a one-minute cadence.
+    // Rough battery hours against a 1200 mAh cell, calibrated to the measured
+    // ~18 mA at a five-minute cadence with light sleep, which fixes the idle
+    // term near 10 mA and the per-query term near 40/m mA.
     //
-    // Deliberately not derived from the raw phase comparison: a freshly charged
-    // cell sheds surface charge for the best part of an hour, and the gauge
-    // reads that as consumption — which inflated the early figures badly.
+    // Deliberately not derived from a raw before/after comparison: a freshly
+    // charged cell sheds surface charge for the best part of an hour and the
+    // gauge reads that as consumption, which inflated the early figures roughly
+    // threefold. Only settled windows were used.
     snprintf(blurbs[i], sizeof(blurbs[i]), "~%d h on a 1200mAh cell",
-             (int)(1200.0 / (24.0 + 50.0 / m)));
+             (int)(1200.0 / (10.0 + 40.0 / m)));
     items[i] = labels[i];
     notes[i] = blurbs[i];
     if (st.refreshMin == m) sel = i;
   }
 
-  int c = runMenu("REFRESH", "* = current", items, notes, N_REFRESH_CHOICES, sel);
+  items[N_REFRESH_CHOICES] = "Back";
+  notes[N_REFRESH_CHOICES] = "leave unchanged";
+
+  int c = runMenu("REFRESH", "* = current", items, notes, N_ROWS, sel);
   waitRelease();
+  if (c == N_REFRESH_CHOICES) return;  // Back — no save, no restart
   st.refreshMin = REFRESH_CHOICES[c];
   settingsSave(st);
   renderStatus(tft, (String(st.refreshMin) + " MIN").c_str(), "saved - restarting...");
