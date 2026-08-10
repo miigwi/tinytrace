@@ -90,10 +90,11 @@ read from the onboard fuel gauge over multi-hour runs.
 
 | Refresh cadence | Draw | Runtime |
 |---|---|---|
-| every 1 min | ~74 mA | ~16 h |
-| **every 5 min** (default) | **~34 mA** | **~33 h** |
-| every 10 min | ~29 mA | ~41 h |
-| never (idle floor) | ~24 mA | ~50 h |
+| every 1 min, no light sleep | ~74 mA | ~16 h |
+| every 5 min, no light sleep | ~34 mA | ~33 h |
+| **every 5 min, light sleep** (default) | **~18 mA** | **~65 h** |
+
+Roughly 3.5× the runtime of where this started (60 s cadence, 240 MHz, no sleep).
 
 **SETTINGS → Refresh Rate** offers 1 / 2 / 5 / 10 / 15 / 30 min and shows the
 estimate for each, so the trade is visible where you make it.
@@ -110,9 +111,8 @@ Two things dominate, and both are now set for endurance rather than freshness:
 
 **Light sleep.** While the panel is blanked there is nothing to draw and nothing
 to poll but the clock, so it light-sleeps to the next scheduled work instead of
-spinning — waking instantly on any button. The figures above were measured
-*before* this landed, so they are a floor rather than a promise; the idle term
-should fall well below 24 mA, but that has not been measured yet.
+spinning — waking instantly on any button. Measured, that halves consumption
+again: ~34 mA → ~18 mA at the same cadence.
 
 The association does not survive a nap of minutes — without `CONFIG_PM_ENABLE`
 nothing lines the sleep up with the AP's DTIM beacons — so the panel rejoins
@@ -124,8 +124,10 @@ would otherwise burn continuously.
 > consumption — it inflated our early figures by 3×. Start from ~85 %, not
 > 100 %, and discard the first 40 minutes.
 
-Going below the ~24 mA floor needs light sleep, which the Arduino framework
-compiles out (`CONFIG_PM_ENABLE` is unset); it would take an ESP-IDF build.
+Going further would need *deep* sleep or the tickless idle the Arduino framework
+compiles out (`CONFIG_PM_ENABLE` is unset), which would take an ESP-IDF build.
+Deep sleep also loses RAM and the screens, and its `ext1` wake-up cannot express
+these buttons' mixed polarity — so the panel light-sleeps instead.
 
 ## Configuration (WiFi & Dynatrace)
 

@@ -89,14 +89,21 @@ static void markStale(Screen &s) {
   }
 }
 
-// refreshAll re-queries every screen into RAM and sets the beacon to the worst
-// severity seen (blue if anything is stale). A failed query keeps the last good
-// screen and dims it.
+// refreshAll re-queries every screen into RAM. A failed query keeps the last
+// good screen and marks it stale.
+//
+// It does not summarise anything into the beacon: the closing updateBeacon()
+// only re-reads the screen currently on display, which is the documented
+// contract everywhere else. So a stale screen you are not looking at does not
+// turn the light blue. In the common failure — tenant or WiFi unreachable —
+// every build fails and every screen is marked stale together, so the
+// distinction rarely shows; it matters when a single query fails on its own.
 //
 // It blocks for the whole exchange — measured at 10-16 s, four queries of two
 // round trips each, dominated by Grail computing them rather than by TLS. Input
 // is not polled during that window, so a press can be missed; the panel is
 // glanceable rather than interactive, and the cadence is deliberately minutes.
+
 // Set whenever the panel has light-slept since the last query. The association
 // does not survive a nap of minutes: without CONFIG_PM_ENABLE nothing lines the
 // sleep up with the AP's DTIM beacons, so they are all missed and the AP drops
